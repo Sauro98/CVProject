@@ -11,7 +11,3 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(BBoxSelector BBoxSelector.cpp Utils.cpp)
 target_link_libraries(BBoxSelector ${OpenCV_LIBS})
 target_link_libraries(BBoxSelector stdc++)
-
-add_executable(test_binary_to_bboxes test_binary_to_bboxes.cpp)
-target_link_libraries(test_binary_to_bboxes ${OpenCV_LIBS})
-target_link_libraries(test_binary_to_bboxes stdc++)

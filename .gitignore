@@ -37,3 +37,7 @@ build
 # archive and folder
 archive.zip
 archive
+
+# vscode 
+
+.vscode
