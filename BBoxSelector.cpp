@@ -85,8 +85,21 @@ int main(int argc, char** argv)
 			{
 				cv::Mat img = cv::imread(fn);
 				std::vector<cv::Rect> ROIs;
-				cv::selectROIs("BBoxSelector", img, ROIs, false);
-				std::cout<<"\n"<<ROIs.size()<<" ROIs selected\n\n";
+				bool loop = true;
+				while(loop)
+				{
+					cv::Rect ROI = cv::selectROI("BBoxSelector", img, false);
+					if(ROI.x == 0 and ROI.y == 0 and ROI.width == 0 and ROI.height == 0)
+					{
+						loop = false;
+					}
+					else
+					{
+						cv::rectangle(img,ROI,cv::Scalar(0,0,255));
+						ROIs.push_back(ROI);
+					}
+				}
+				std::cout<<"\n"<<ROIs.size()<<" ROIs selected\n\n\n";
 				
 				std::ofstream output;
 				output.open(baseFn+".txt");
