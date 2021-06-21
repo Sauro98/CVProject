@@ -11,9 +11,9 @@ int main(int argc, char** argv)
 	// folder, with the same name as the image it refers to.
 	std::vector<cv::String> filenames;
 	std::vector<cv::String> done;
-    cv::utils::fs::glob(cv::String(argv[1]), cv::String("*.jpg"), filenames);
-    cv::utils::fs::glob(cv::String(argv[1]), cv::String("*.txt"), done);
-    cv::namedWindow("BBoxSelector");
+    	cv::utils::fs::glob(cv::String(argv[1]), cv::String("*.jpg"), filenames);
+    	cv::utils::fs::glob(cv::String(argv[1]), cv::String("*.txt"), done);
+    	cv::namedWindow("BBoxSelector");
 	std::cout<<filenames.size()<<" images found\n";
 	
 	// -S option: allows the user to see the bounding boxes they selected
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
 			selectROIs("BBoxSelector", img, ROIs);
 			std::cout<<"\n"<<ROIs.size()<<" ROIs selected\n\n\n";
 			
-			// After the user is done save the rois (old and new)
+			// After the user is done save the ROIs (old and new)
 			// to a txt file with the same name as the image
 
 			saveROIs(fn.substr(0,fn.size()-4), ROIs);
@@ -94,7 +94,7 @@ int main(int argc, char** argv)
 	// General case: Images are shown one at a time and the user is allowed to draw bounding boxes over them.
 	// Once the user is satisfied with the drawn bounding box, they can press enter or space to confirm it. When
 	// the user is done selecting bounding boxes for the current image, they can press enter or space without drawing
-	// any box to go to the next image. Images for which bounding boxes already exist will be skipped, propting the user
+	// any box to go to the next image. Images for which bounding boxes already exist will be skipped, prompting the user
 	// with the first image they haven't seen yet.
 	else
 	{
@@ -122,12 +122,12 @@ int main(int argc, char** argv)
 				cv::Mat img = cv::imread(fn);
 				std::vector<cv::Rect> ROIs;
 				
-				//allow the user to draw bounding boxes over the image
+				// allow the user to draw bounding boxes over the image
 
 				selectROIs("BBoxSelector", img, ROIs);
 				std::cout<<"\n"<<ROIs.size()<<" ROIs selected\n\n\n";
 
-				// After the user is done save the rois (old and new)
+				// After the user is done save the new ROIs
 				// to a txt file with the same name as the image
 
 				saveROIs(fn.substr(0,fn.size()-4), ROIs);
