@@ -11,7 +11,7 @@
 
 /// Utility function to load a set of bounding boxes from a txt file.
 /// The txt file must have the same name as the image it refers to and it has
-/// to contain a bounding box in each line. Boundig boxes are specified by
+/// to contain a bounding box in each line. Bounding boxes are specified by
 /// starting x, starting y, width and height, all separated by a whitespace.
 void loadROIs(std::string name, std::vector<cv::Rect>& ROIs);
 
