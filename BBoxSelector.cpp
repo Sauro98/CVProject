@@ -6,6 +6,51 @@
 #include <opencv2/core/utils/filesystem.hpp>
 #include <opencv2/imgproc.hpp>
 
+#include "Utils.hpp"
+
+void selectROIs(cv::String name, cv::Mat& img, std::vector<cv::Rect>& ROIs)
+{
+	bool loop = true;
+	while(loop)
+	{
+		cv::Rect ROI = cv::selectROI(name, img, false);
+		if(ROI.x == 0 and ROI.y == 0 and ROI.width == 0 and ROI.height == 0)
+		{
+			loop = false;
+		}
+		else
+		{
+			cv::rectangle(img,ROI,cv::Scalar(0,0,255));
+			ROIs.push_back(ROI);
+		}
+	}
+}
+
+void saveROIs(cv::String baseName, std::vector<cv::Rect>& ROIs)
+{
+	std::ofstream output;
+	output.open(baseName+".txt");
+	for(const auto& ROI: ROIs)
+	{
+		output<<ROI.x<<" "<<ROI.y<<" "<<ROI.width<<" "<<ROI.height<<"\n";
+	}
+	output.close();
+}
+
+bool filenamesMatch(const cv::String& f1, const cv::String& f2)
+{
+	return f1.size() == f2.size() and
+			f1.substr(0,f1.size()-4) == f2.substr(0,f1.size()-4);
+}
+
+void drawROIs(cv::Mat& img, std::vector<cv::Rect>& ROIs)
+{
+	for(const auto& ROI: ROIs)
+	{
+		cv::rectangle(img,ROI,cv::Scalar(0,0,255));
+	}
+}
+
 int main(int argc, char** argv)
 {
 	std::vector<cv::String> filenames;
@@ -19,27 +64,14 @@ int main(int argc, char** argv)
 	{
 		for(const auto& fn: filenames)
 		{
-			cv::String baseFn = fn.substr(0,fn.size()-4);
 			std::vector<cv::Rect> ROIs;
 			bool show = false;
 			for(const auto& dn: done)
 			{
-				if(
-					fn.size() == dn.size() and
-					baseFn == dn.substr(0,dn.size()-4)
-				)
+				if(filenamesMatch(fn,dn))
 				{
 					show = true;
-					std::ifstream input;
-					input.open(dn);
-					int x, y, w, h;
-					while (input >> x >> y >> w >> h)
-					{
-						std::cout<<x<<" "<<y<<" "<<w<<" "<<h<<"\n";
-						ROIs.push_back(cv::Rect(x,y,w,h));
-					}
-					std::cout<<"\n";
-					input.close();
+					loadROIs(dn,ROIs);
 					break;
 				}
 			}
@@ -47,10 +79,7 @@ int main(int argc, char** argv)
 			if(show)
 			{
 				cv::Mat img = cv::imread(fn);
-				for(const auto& ROI: ROIs)
-				{
-					cv::rectangle(img,ROI,cv::Scalar(0,0,255));
-				}
+				drawROIs(img, ROIs);
 				cv::imshow("BBoxSelector", img);
 				cv::waitKey(0);
 			}
@@ -64,75 +93,39 @@ int main(int argc, char** argv)
 	{
 		for(const auto& fn: filenames)
 		{
-			cv::String baseFn = fn.substr(0,fn.size()-4);
 			std::vector<cv::Rect> ROIs;
 			cv::Mat img = cv::imread(fn);
 			
 			for(const auto& dn: done)
 			{
-				if(
-					fn.size() == dn.size() and
-					baseFn == dn.substr(0,dn.size()-4)
-				)
+				if(filenamesMatch(fn,dn))
 				{
-					std::ifstream input;
-					input.open(dn);
-					int x, y, w, h;
-					while (input >> x >> y >> w >> h)
-					{
-						std::cout<<x<<" "<<y<<" "<<w<<" "<<h<<"\n";
-						cv::Rect ROI = cv::Rect(x,y,w,h);
-						ROIs.push_back(ROI);
-						cv::rectangle(img,ROI,cv::Scalar(0,0,255));
-					}
-					std::cout<<"\n";
-					input.close();
+					loadROIs(dn, ROIs);
+					drawROIs(img, ROIs);
 					break;
 				}
 			}
 
-			bool loop = true;
-			while(loop)
-			{
-				cv::Rect ROI = cv::selectROI("BBoxSelector", img, false);
-				if(ROI.x == 0 and ROI.y == 0 and ROI.width == 0 and ROI.height == 0)
-				{
-					loop = false;
-				}
-				else
-				{
-					cv::rectangle(img,ROI,cv::Scalar(0,0,255));
-					ROIs.push_back(ROI);
-				}
-			}
+			selectROIs("BBoxSelector", img, ROIs);
 			std::cout<<"\n"<<ROIs.size()<<" ROIs selected\n\n\n";
 			
-			std::ofstream output;
-			output.open(baseFn+".txt");
-			for(const auto& ROI: ROIs)
-			{
-				output<<ROI.x<<" "<<ROI.y<<" "<<ROI.width<<" "<<ROI.height<<"\n";
-			}
-			output.close();
+			saveROIs(fn.substr(0,fn.size()-4), ROIs);
 		}
 	}
 	else
 	{
 		for(const auto& fn: filenames)
 		{
-			cv::String baseFn = fn.substr(0,fn.size()-4);
 			bool skip = false;
 			for(const auto& dn: done)
 			{
-				if(
-					fn.size() == dn.size() and
-					baseFn == dn.substr(0,dn.size()-4)
-				)
+				if(filenamesMatch(fn,dn))
 				{
 					skip = true;
 					break;
 				}
 			}
+			
 			if(skip)
 			{
 				std::cout<<"skipping "<<fn<<"\n";
@@ -141,29 +134,10 @@ int main(int argc, char** argv)
 			{
 				cv::Mat img = cv::imread(fn);
 				std::vector<cv::Rect> ROIs;
-				bool loop = true;
-				while(loop)
-				{
-					cv::Rect ROI = cv::selectROI("BBoxSelector", img, false);
-					if(ROI.x == 0 and ROI.y == 0 and ROI.width == 0 and ROI.height == 0)
-					{
-						loop = false;
-					}
-					else
-					{
-						cv::rectangle(img,ROI,cv::Scalar(0,0,255));
-						ROIs.push_back(ROI);
-					}
-				}
-				std::cout<<"\n"<<ROIs.size()<<" ROIs selected\n\n\n";
 				
-				std::ofstream output;
-				output.open(baseFn+".txt");
-				for(const auto& ROI: ROIs)
-				{
-					output<<ROI.x<<" "<<ROI.y<<" "<<ROI.width<<" "<<ROI.height<<"\n";
-				}
-				output.close();
+				selectROIs("BBoxSelector", img, ROIs);
+				std::cout<<"\n"<<ROIs.size()<<" ROIs selected\n\n\n";
+				saveROIs(fn.substr(0,fn.size()-4), ROIs);
 			}
 		}
 	}
