@@ -26,7 +26,7 @@ int main(int argc, char** argv) {
 
 
         if (argc != 3) {
-            printf("usage: ./filename <Image_Directory> <Format_of_images: ex. *.bmp or *.png>\n");
+            printf("usage: ./filename <Image_Directory> <Format_of_images: ex. *.bmp or *.png or *.jpg>\n");
             return -1;
         }
 
