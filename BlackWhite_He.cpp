@@ -40,8 +40,8 @@ int main(int argc, char** argv) {
         Mat result_img = preproc_img.bgr_to_gray_HE(img);
 
         images.push_back(result_img);
-        int beg_str = String(argv[1]).size();
-        int len_str = (int)fn.size()-(4+beg_str - 1);
+        int beg_str = String(argv[1]).size() + 1;
+        int len_str = (int)fn.size()-(4+beg_str);
         String name =  "BnW_" + fn.substr(beg_str,len_str);
         output_names.push_back(name);
 
