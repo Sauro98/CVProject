@@ -11,3 +11,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 add_executable(BBoxSelector BBoxSelector.cpp Utils.cpp)
 target_link_libraries(BBoxSelector ${OpenCV_LIBS})
 target_link_libraries(BBoxSelector stdc++)
+
+add_executable(bw_he BlackWhite_He.cpp)
+target_link_libraries(bw_he ${OpenCV_LIBS})
+target_link_libraries(bw_he stdc++)

@@ -7,20 +7,6 @@
 using namespace cv;
 using namespace std;
 
-#if __cplusplus < 201703L // If the version of C++ is less than 17
-#include <experimental/filesystem>
-// It was still in the experimental:: namespace
-namespace fs = std::experimental::filesystem;
-
-
-#else
-#include <filesystem>
-    namespace fs = std::filesystem;
-
-#endif
-
-
-
 
 int main(int argc, char** argv) {
 
@@ -33,8 +19,11 @@ int main(int argc, char** argv) {
     std::vector<cv::String> filenames;
     std::vector<cv::String> output_names;
     std::vector<cv::Mat> images;
-    string newfolder = "B&W_" + String(argv[1]);
-    fs::create_directory(newfolder);
+    string newfolder = String(argv[1]) + "/BnW";
+    std::cout<<newfolder<<std::endl;
+    if(!cv::utils::fs::createDirectory(newfolder)){
+        std::cout<<"Failed to create directory"<<std::endl;
+    }
 
     cv::utils::fs::glob( String(argv[1]), String(argv[2]), filenames);
 
@@ -52,21 +41,23 @@ int main(int argc, char** argv) {
 
         images.push_back(result_img);
         int beg_str = String(argv[1]).size();
-        int len_str = (int)fn.size()-(4+beg_str);
-        String name =  "B&W_" + fn.substr(beg_str,len_str);
+        int len_str = (int)fn.size()-(4+beg_str - 1);
+        String name =  "BnW_" + fn.substr(beg_str,len_str);
         output_names.push_back(name);
 
     }
-    stringstream ss;
     for(int i = 0; i<output_names.size(); i++)
     {
-        cout<<output_names[i]<<endl;
+        stringstream ss;
         ss<<newfolder<<"/"<<output_names[i]<<String(argv[2]).substr(1);
+        string fullPath = ss.str();
+        cout<<fullPath<<endl;
+        ss.str("");
 
-    string fullPath = ss.str();
-    ss.str("");
-
-    imwrite(fullPath, images[i]);}
+        if(!imwrite(fullPath, images[i])){
+            std::cout<<"Failed to write image"<<std::endl;
+        }
+    }
 
     return 0;
 }
