@@ -15,3 +15,7 @@ target_link_libraries(BBoxSelector stdc++)
 add_executable(bw_he BlackWhite_He.cpp)
 target_link_libraries(bw_he ${OpenCV_LIBS})
 target_link_libraries(bw_he stdc++)
+
+add_executable(sea_selector sea_selector.cpp)
+target_link_libraries(sea_selector ${OpenCV_LIBS})
+target_link_libraries(sea_selector stdc++)
