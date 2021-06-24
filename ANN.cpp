@@ -10,14 +10,14 @@
 
 Ann::Ann(std::string fileName)
 {
-    std::ifstream file;
-    file.open(fileName+".ann");
-    if(!file.is_open())
-    {
-        throw std::runtime_error("Error loading file...");
-    }
-    else
-    {
+	std::ifstream file;
+	file.open(fileName+".ann");
+	if(!file.is_open())
+	{
+	throw std::runtime_error("Error loading file...");
+	}
+	else
+	{
 		unsigned int NoL;
 		file >> NoL;
 		NpL = std::vector<unsigned int>(NoL, 0);
@@ -46,7 +46,7 @@ Ann::Ann(std::string fileName)
 		results[results.size()-1].pop_back();
 		
 		file.close();
-    }
+	}
 }
 
 Ann::Ann(const std::vector<unsigned int> &NPL)
@@ -78,7 +78,7 @@ void Ann::randomize(unsigned int seed)
 {
 	std::default_random_engine generator;
 	std::uniform_real_distribution<double> distribution(-2.0,2.0);
-    generator.seed(seed);
+	generator.seed(seed);
 	for(unsigned int layer=0; layer<WpL.size(); ++layer)
 	{
 		for(unsigned int i=0; i<WpL[layer].size(); ++i)
@@ -92,13 +92,13 @@ void Ann::randomize(unsigned int seed)
 }
 
 bool Ann::save(std::string fileName)
-{	
+{
 	std::ofstream file;
-    file.open(fileName+".ann");
-    if(!file.is_open())
-    {
-        return false;
-    }
+	file.open(fileName+".ann");
+	if(!file.is_open())
+	{
+		return false;
+	}
 	
 	file << NpL.size() << " ";
 	for(unsigned int i=0; i<NpL.size(); ++i)
@@ -201,7 +201,7 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 {
 	std::vector<double> buffer = std::vector<double>(NpL[NpL.size()-1], 0.0);
 	std::vector<std::vector<std::vector<double>>> DpL = std::vector<std::vector<std::vector<double>>>();
-    std::vector<std::vector<double>> grad = std::vector<std::vector<double>>();
+	std::vector<std::vector<double>> grad = std::vector<std::vector<double>>();
 	
 	grad.push_back(std::vector<double>());
 	for(unsigned int i=1; i<results.size(); ++i)
@@ -222,21 +222,21 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 	unsigned int nonImproving = 0;
 	
 	unsigned int mainIt = 0;
-    for(; mainIt<iterations; ++mainIt)
-    {
-        for(unsigned int sample=0; sample<inputs.size(); ++sample)
-        {
+	for(; mainIt<iterations; ++mainIt)
+	{
+		for(unsigned int sample=0; sample<inputs.size(); ++sample)
+		{
 			// forward pass
 			use(inputs[sample],buffer);
 			
-            // backpropagation
-            for(unsigned int i=0; i<NpL[NpL.size()-1]; ++i)
-            {
-                grad[grad.size()-1][i] = (buffer[i] - outputs[sample][i]) * buffer[i]*(1-buffer[i]);
-            }
+			// backpropagation
+			for(unsigned int i=0; i<NpL[NpL.size()-1]; ++i)
+			{
+				grad[grad.size()-1][i] = (buffer[i] - outputs[sample][i]) * buffer[i]*(1-buffer[i]);
+			}
 			
-            for(unsigned int layer=NpL.size()-2; layer>0; --layer)
-            {
+			for(unsigned int layer=NpL.size()-2; layer>0; --layer)
+			{
 				for(unsigned int i=0; i<grad[layer].size(); ++i)
 				{
 					grad[layer][i] = GradReLU(results[layer][i]);
@@ -249,7 +249,7 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 						}
 					}
 				}
-            }
+			}
 			
 			// gradient descent
 			for(unsigned int layer=0; layer<WpL.size(); ++layer)
@@ -259,15 +259,15 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 					for(unsigned int j=0; j<WpL[layer][i].size(); ++j)
 					{
 						const double delta = DpL[layer][i][j] - (grad[layer+1][j]*results[layer][i]);
-                        WpL[layer][i][j] += N*delta;
-                        DpL[layer][i][j] = B*delta;
+						WpL[layer][i][j] += N*delta;
+						DpL[layer][i][j] = B*delta;
 					}
 				}
 			}
 		}
 		
 		if(mainIt%minErrorEpochs==0)
-        {
+		{
 			double error(0);
 			if(useCategorical)
 			{
@@ -296,10 +296,10 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 				else std::cout<<error;
 				std::cout<<"\n";
 			}
-            if(error<minError)
-            {
-                break;
-            }
+			if(error<minError)
+			{
+				break;
+			}
 			if(patience>=0)
 			{
 				if(error <= bestError)
@@ -316,32 +316,31 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 					}
 				}
 			}
-        }
-    }
+		}
+	}
 	
 	if(verbose)
 	{
 		std::cout<<"\n";
 	}
-
-    return mainIt;
+	
+	return mainIt;
 }
 
 double Ann::getError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs)
 {
-    double total = 0;
+	double total = 0;
 	std::vector<double> buffer = std::vector<double>(NpL[NpL.size()-1], 0.0);
-    
+	
 	for(unsigned int i=0; i<inputs.size(); ++i)
-    {
+	{
 		use(inputs[i],buffer);
 		for(unsigned int node=0; node<buffer.size(); ++node)
 		{
 			const double error = buffer[node]-outputs[i][node];
 			total += error*error;
 		}
-    }
-    
+	}
 	return 0.5*total/inputs.size();
 }
 
@@ -349,28 +348,28 @@ double Ann::getCategoricalError(const std::vector<std::vector<double>> &inputs, 
 {
 	double total = 0;
 	std::vector<double> buffer = std::vector<double>(NpL[NpL.size()-1], 0.0);
-    
+	
 	for(unsigned int i=0; i<inputs.size(); ++i)
-    {
+	{
 		const unsigned int index = useCategorical(inputs[i]);
 		
 		if(outputs[i][index]!=1)
 		{
 			total += 1;
 		}
-    }
-    
+	}
+	
 	return total/inputs.size();
 }
 
 void Ann::use(const std::vector<double> &inputs, std::vector<double> &outputs)
 {
-    for(unsigned int i=0; i<inputs.size(); ++i)
-    {
-        results[0][i] = inputs[i];
-    }
+	for(unsigned int i=0; i<inputs.size(); ++i)
+	{
+		results[0][i] = inputs[i];
+	}
 	
-    for(unsigned int layer=1; layer<results.size(); ++layer)
+	for(unsigned int layer=1; layer<results.size(); ++layer)
 	{
 		unsigned int maxIt = results[layer].size()-1;
 		if(layer == (results.size()-1)) ++maxIt;
@@ -404,11 +403,11 @@ void Ann::use(const std::vector<double> &inputs, std::vector<double> &outputs)
 			}
 		}
 	}
-
-    for(unsigned int i=0; i<outputs.size(); ++i)
-    {
-        outputs[i] = results[results.size()-1][i];
-    }
+	
+	for(unsigned int i=0; i<outputs.size(); ++i)
+	{
+		outputs[i] = results[results.size()-1][i];
+	}
 }
 
 unsigned int Ann::useCategorical(const std::vector<double> &inputs)
