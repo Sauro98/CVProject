@@ -14,7 +14,7 @@ Ann::Ann(std::string fileName)
 	file.open(fileName+".ann");
 	if(!file.is_open())
 	{
-	throw std::runtime_error("Error loading file...");
+		throw std::runtime_error("Error loading file...");
 	}
 	else
 	{
