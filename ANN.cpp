@@ -156,7 +156,7 @@ void Ann::show()
 		}
 		std::cout<<"\n";
 	}
-	
+	/*
 	if(DpL.size()>0)
 	{
 		std::cout<<"\n";
@@ -188,26 +188,27 @@ void Ann::show()
 			std::cout<<"\n";
 		}
 	}
+	*/
 
 	std::cout<<"================================================== \n"<<std::endl;
 }
 
 unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs,
 						const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
-						bool verbose, double minError, unsigned int iterations,
+						double minError, unsigned int iterations, unsigned int minErrorEpochs, int patience,
+						bool useCategorical, bool verbose,
 						double N, double B)
 {
-	unsigned int mainIt = 0;
 	std::vector<double> buffer = std::vector<double>(NpL[NpL.size()-1], 0.0);
+	std::vector<std::vector<std::vector<double>>> DpL = std::vector<std::vector<std::vector<double>>>();
+    std::vector<std::vector<double>> grad = std::vector<std::vector<double>>();
 	
-	grad.clear();
 	grad.push_back(std::vector<double>());
 	for(unsigned int i=1; i<results.size(); ++i)
 	{
 		grad.push_back(std::vector<double>(results[i].size(),0.0));
 	}
 	
-	DpL.clear();
 	for(unsigned int layer=0; layer<WpL.size(); ++layer)
 	{
 		DpL.push_back(std::vector<std::vector<double>>());
@@ -217,6 +218,10 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 		}
 	}
 	
+	double bestError = 3.0*buffer.size();
+	unsigned int nonImproving = 0;
+	
+	unsigned int mainIt = 0;
     for(; mainIt<iterations; ++mainIt)
     {
         for(unsigned int sample=0; sample<inputs.size(); ++sample)
@@ -228,8 +233,7 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
             for(unsigned int i=0; i<NpL[NpL.size()-1]; ++i)
             {
                 grad[grad.size()-1][i] = (buffer[i] - outputs[sample][i]) * buffer[i]*(1-buffer[i]);
-				//std::cout<<grad[grad.size()-1][i]<<" "<<buffer[i] - outputs[sample][i]<<" "<<buffer[i]<<" ";
-            }//std::cout<<" grad\n";
+            }
 			
             for(unsigned int layer=NpL.size()-2; layer>0; --layer)
             {
@@ -255,7 +259,6 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 					for(unsigned int j=0; j<WpL[layer][i].size(); ++j)
 					{
 						const double delta = DpL[layer][i][j] - (grad[layer+1][j]*results[layer][i]);
-						//std::cout<<delta<<" "<<DpL[layer][i][j]<<" "<<grad[layer+1][j]<<" "<<results[layer][i]<<"\n";
                         WpL[layer][i][j] += N*delta;
                         DpL[layer][i][j] = B*delta;
 					}
@@ -263,17 +266,56 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 			}
 		}
 		
-		if(mainIt%10==0)
+		if(mainIt%minErrorEpochs==0)
         {
-			const double error = getError(vInputs,vOutputs);
+			double error(0);
+			if(useCategorical)
+			{
+				error = getCategoricalError(vInputs,vOutputs);
+			}
+			else
+			{
+				error = getError(vInputs,vOutputs);
+			}
 			if(verbose)
 			{
-				std::cout<<mainIt<<": "<<error<<"\n";
+				double trainError(0);
+				if(useCategorical)
+				{
+					trainError = getCategoricalError(inputs,outputs);
+				}
+				else
+				{
+					trainError = getError(inputs,outputs);
+				}
+				std::cout<<"Iteration "<<mainIt<<"; train: ";
+				if(useCategorical) std::cout<<trainError*100<<"%";
+				else std::cout<<trainError;
+				std::cout<<", validation: ";
+				if(useCategorical) std::cout<<error*100<<"%";
+				else std::cout<<error;
+				std::cout<<"\n";
 			}
             if(error<minError)
             {
                 break;
             }
+			if(patience>=0)
+			{
+				if(error <= bestError)
+				{
+					bestError = error;
+					nonImproving = 0;
+				}
+				else
+				{
+					++nonImproving;
+					if(nonImproving>patience)
+					{
+						break;
+					}
+				}
+			}
         }
     }
 	
@@ -303,6 +345,24 @@ double Ann::getError(const std::vector<std::vector<double>> &inputs, const std::
 	return 0.5*total/inputs.size();
 }
 
+double Ann::getCategoricalError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs)
+{
+	double total = 0;
+	std::vector<double> buffer = std::vector<double>(NpL[NpL.size()-1], 0.0);
+    
+	for(unsigned int i=0; i<inputs.size(); ++i)
+    {
+		const unsigned int index = useCategorical(inputs[i]);
+		
+		if(outputs[i][index]!=1)
+		{
+			total += 1;
+		}
+    }
+    
+	return total/inputs.size();
+}
+
 void Ann::use(const std::vector<double> &inputs, std::vector<double> &outputs)
 {
     for(unsigned int i=0; i<inputs.size(); ++i)
@@ -310,34 +370,60 @@ void Ann::use(const std::vector<double> &inputs, std::vector<double> &outputs)
         results[0][i] = inputs[i];
     }
 	
-	// Could be optimized by looping in a more cache-friendly order
-    for(unsigned int layer=1; layer<(results.size()-1); ++layer)
+    for(unsigned int layer=1; layer<results.size(); ++layer)
 	{
-		for(unsigned int to=0; to<(results[layer].size()-1); ++to)
+		unsigned int maxIt = results[layer].size()-1;
+		if(layer == (results.size()-1)) ++maxIt;
+		
+		for(unsigned int to=0; to<maxIt; ++to)
 		{
 			results[layer][to] = 0;
-			for(unsigned int from=0; from<results[layer-1].size(); ++from)
-			{
-				results[layer][to] += results[layer-1][from]*WpL[layer-1][from][to];
-			}
-			results[layer][to] = ReLU(results[layer][to]);
 		}
-	}
-	
-	// Could be optimized by looping in a more cache-friendly order
-	const unsigned int layer = NpL.size()-1;
-	for(unsigned int to=0; to<results[layer].size(); ++to)
-	{
-		results[layer][to] = 0;
+		
 		for(unsigned int from=0; from<results[layer-1].size(); ++from)
 		{
-			results[layer][to] += results[layer-1][from]*WpL[layer-1][from][to];
+			const double fromRes = results[layer-1][from];
+			for(unsigned int to=0; to<maxIt; ++to)
+			{
+				results[layer][to] += fromRes*WpL[layer-1][from][to];
+			}
 		}
-		results[layer][to] = Sigmoid(results[layer][to]);
+		
+		if(layer<(results.size()-1))
+		{
+			for(unsigned int to=0; to<maxIt; ++to)
+			{
+				results[layer][to] = ReLU(results[layer][to]);
+			}
+		}
+		else
+		{
+			for(unsigned int to=0; to<maxIt; ++to)
+			{
+				results[layer][to] = Sigmoid(results[layer][to]);
+			}
+		}
 	}
 
     for(unsigned int i=0; i<outputs.size(); ++i)
     {
         outputs[i] = results[results.size()-1][i];
     }
+}
+
+unsigned int Ann::useCategorical(const std::vector<double> &inputs)
+{
+	std::vector<double> outputs = std::vector<double>(NpL[NpL.size()-1], 0.0);
+	use(inputs, outputs);
+	unsigned int index = 0;
+	double maxVal = outputs[0];
+	for(unsigned int node=1; node<outputs.size(); ++node)
+	{
+		if(outputs[node]>maxVal)
+		{
+			maxVal = outputs[node];
+			index = node;
+		}
+	}
+	return index;
 }
