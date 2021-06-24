@@ -48,15 +48,19 @@ public:
   * \param outputs training targets.
   * \param vInputs validation inputs.
   * \param vOutputs validation targets.
-  * \param verbose verbosity.
   * \param minError minimum error to reach before automatic stopping.
   * \param iterations max number of iterations.
+  * \param minErrorEpochs number of epochs between subsequent validation error test.
+  * \param patience patience for early stopping. -1 disables early stopping.
+  * \param useCategorical use categorical error instead of MSE.
+  * \param verbose verbosity.
   * \param N Learning rate.
   * \param B Momentum factor.
   * \return number of iterations performed. */
     unsigned int train(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs,
                        const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
-                       bool verbose = true, double minError = 0.01, unsigned int iterations = 1000,
+					   double minError = 0.01, unsigned int iterations = 1000, unsigned int minErrorEpochs = 10, int patience = -1,
+					   bool useCategorical = false, bool verbose = true,
 					   double N = 0.3, double B = 0.1);
 
 /** \brief Get error. */
@@ -66,19 +70,31 @@ public:
   * \return You guessed it, the error. */
     double getError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs);
 
+/** \brief Get categorical error. */
+/** Computes the ratio in [0-1] of inputs wrongly classified by the ANN, assuming one-hot encoding.
+  * The lower the better. */
+/** \param inputs test inputs.
+  * \param outputs test targets.
+  * \return The ratio of wrongly classified inputs. */
+    double getCategoricalError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs);
+
 /** \brief Use the ANN. */
 /** Computes the output of the ANN on the given input. */
 /** \param inputs the inputs.
   * \param outputs the output of the ANN. */
     void use(const std::vector<double> &inputs, std::vector<double> &outputs);
 
+/** \brief Use the ANN. */
+/** Computes the output of the ANN on the given input, converting the result from one-hot to an index. */
+/** \param inputs the inputs.
+  * \return the category index. */
+    unsigned int useCategorical(const std::vector<double> &inputs);
+
 private:
 
     std::vector<unsigned int> NpL = std::vector<unsigned int>();
     std::vector<std::vector<std::vector<double>>> WpL = std::vector<std::vector<std::vector<double>>>();
     std::vector<std::vector<double>> results = std::vector<std::vector<double>>();
-    std::vector<std::vector<std::vector<double>>> DpL = std::vector<std::vector<std::vector<double>>>();
-    std::vector<std::vector<double>> grad = std::vector<std::vector<double>>();
 };
 
 #endif
