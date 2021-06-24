@@ -13,7 +13,7 @@ public:
 /** The ".ann" extension is added internally. */
 /** \param name fileName of the file from which the ANN will be loaded.
   * \see Save(std::string fileName) */
-    Ann(std::string fileName);
+	Ann(std::string fileName);
 
 /** \brief Class constructor which lets creating a new ANN from the number of neuron per layer. */
 /** \param NPL Vector which specifies the number of neurons and layers the new ANN should have.\n */
@@ -25,22 +25,22 @@ public:
     myVector.push_back(1);
     Ann myAnn(myVector);
     ~~~~~~~~~~~~~ */
-    Ann(const std::vector<unsigned int> &NPL);
+	Ann(const std::vector<unsigned int> &NPL);
 
 /** \brief Randomizes the ANN, setting new random weights. Called e.g. by Ann(const std::vector<unsigned int> &NPL). */
 /** \param seed Seed for the random number generator. */
-    void randomize(unsigned int seed);
+	void randomize(unsigned int seed);
 
 /** \brief Saves the ANN on a .ann file. */
 /** Lets you saving the ANN in a text format. */
 /** \param fileName Name of the file. The ".ann" extension is added internally. Default: "NewAnn".
   * \return True on success, false on failure.
   * \see  Ann(std::string fileName);*/
-    bool save(std::string fileName = "NewAnn");
+	bool save(std::string fileName = "NewAnn");
 
 /** \brief Shows the ANN. */
 /** Used to show all the ANN data. Mostly for debugging purposes. */
-    void show();
+	void show();
 
 /** \brief Trains the ANN. */
 /** Lets you train the ANN, using somewhat standard online SGD with momentum. */
@@ -57,8 +57,8 @@ public:
   * \param N Learning rate.
   * \param B Momentum factor.
   * \return number of iterations performed. */
-    unsigned int train(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs,
-                       const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
+	unsigned int train(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs,
+					   const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
 					   double minError = 0.01, unsigned int iterations = 1000, unsigned int minErrorEpochs = 10, int patience = -1,
 					   bool useCategorical = false, bool verbose = true,
 					   double N = 0.3, double B = 0.1);
@@ -68,7 +68,7 @@ public:
 /** \param inputs test inputs.
   * \param outputs test targets.
   * \return You guessed it, the error. */
-    double getError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs);
+	double getError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs);
 
 /** \brief Get categorical error. */
 /** Computes the ratio in [0-1] of inputs wrongly classified by the ANN, assuming one-hot encoding.
@@ -76,25 +76,24 @@ public:
 /** \param inputs test inputs.
   * \param outputs test targets.
   * \return The ratio of wrongly classified inputs. */
-    double getCategoricalError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs);
+	double getCategoricalError(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs);
 
 /** \brief Use the ANN. */
 /** Computes the output of the ANN on the given input. */
 /** \param inputs the inputs.
   * \param outputs the output of the ANN. */
-    void use(const std::vector<double> &inputs, std::vector<double> &outputs);
+	void use(const std::vector<double> &inputs, std::vector<double> &outputs);
 
 /** \brief Use the ANN. */
 /** Computes the output of the ANN on the given input, converting the result from one-hot to an index. */
 /** \param inputs the inputs.
   * \return the category index. */
-    unsigned int useCategorical(const std::vector<double> &inputs);
+	unsigned int useCategorical(const std::vector<double> &inputs);
 
 private:
-
-    std::vector<unsigned int> NpL = std::vector<unsigned int>();
-    std::vector<std::vector<std::vector<double>>> WpL = std::vector<std::vector<std::vector<double>>>();
-    std::vector<std::vector<double>> results = std::vector<std::vector<double>>();
+	std::vector<unsigned int> NpL = std::vector<unsigned int>();
+	std::vector<std::vector<std::vector<double>>> WpL = std::vector<std::vector<std::vector<double>>>();
+	std::vector<std::vector<double>> results = std::vector<std::vector<double>>();
 };
 
 #endif
