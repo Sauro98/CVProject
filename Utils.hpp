@@ -4,9 +4,11 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/features2d/features2d.hpp>
 
 
 /// Utility function to load a set of bounding boxes from a txt file.
@@ -39,5 +41,11 @@ bool filenamesMatch(const cv::String& f1, const cv::String& f2);
 
 /// Updates `img` by drawing all the ROIs contained in `ROIs` with a thin red line.
 void drawROIs(cv::Mat& img, std::vector<cv::Rect>& ROIs);
+
+unsigned int selectKeypoints(cv::String name, cv::Mat& img, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& selected, unsigned int brushSize);
+void findAllKeypoints(cv::Mat& img, std::vector<cv::KeyPoint>& keypoints, bool shouldSharpen = true);
+void createMask(cv::Mat& img, std::vector<cv::KeyPoint>& background, std::vector<cv::KeyPoint>& foreground, cv::Mat& mask);
+void showMask(cv::String name, cv::Mat& img, cv::Mat& mask);
+void saveMask(cv::String baseName, cv::Mat& mask);
 
 #endif // __UTILS_HPP_INCLUDED__
