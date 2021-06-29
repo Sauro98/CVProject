@@ -20,14 +20,16 @@ public:
 
     //if bounding boxes in the image have already been selected and their coordinates are written into a txt file,
     //we save them into a vector of rect and return this vector
-    vector<Rect> checkFileBB(const String& bboxes)
+    vector<Rect> checkFileBB(const String& bboxes, int &check)
     {
         fstream my_file;
         vector<Rect> out_rects;
         my_file.open(bboxes, ios::in);
+        check = 0;
 
         if (!my_file) {
             cout << "No such file!\n";
+            check = 1;
         }
 
         else {
