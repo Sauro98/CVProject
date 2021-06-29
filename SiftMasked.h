@@ -32,14 +32,13 @@ public:
 
         else {
 
-            int width,height;
-            int y;
-            int x;
+            int x,y,width,height;
+            
             while (my_file >> x >> y >> width >> height) {
 
                 cout << x << " " << y << " " << width << " " << height << endl;
 
-                out_rects.push_back(cv::Rect((int)x, (int)y, (int)width, (int)height));
+                out_rects.push_back(cv::Rect(x, y, width, height));
             }
 
         }
