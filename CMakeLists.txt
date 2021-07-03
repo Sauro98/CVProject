@@ -19,3 +19,7 @@ target_link_libraries(bw_he stdc++)
 add_executable(sea_selector sea_selector.cpp)
 target_link_libraries(sea_selector ${OpenCV_LIBS})
 target_link_libraries(sea_selector stdc++)
+
+add_executable(k_m_t k_m_t.cpp)
+target_link_libraries(k_m_t ${OpenCV_LIBS})
+target_link_libraries(k_m_t stdc++)

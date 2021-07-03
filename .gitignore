@@ -41,3 +41,7 @@ archive
 # vscode 
 
 .vscode
+
+# test files
+k_m_t.cpp
+test.cpp
