@@ -107,8 +107,9 @@ double median(cv::Mat& img)
 }
 
 typedef struct {
-    std::vector<cv::KeyPoint>* original;
-    std::vector<cv::KeyPoint>* selected;
+    /*std::vector<cv::KeyPoint>* original;
+    std::vector<cv::KeyPoint>* selected;*/
+	cv::Mat* mask;
 	cv::Mat* img;
 	cv::String* name;
 	unsigned int brushSize = 20;
@@ -117,10 +118,7 @@ typedef struct {
 
 void updateKPImage(KPCallbackData& data)
 {
-	cv::Mat out;
-	cv::drawKeypoints(*data.img, *data.original, out, cv::Scalar(0,0,255));
-	cv::drawKeypoints(out, *data.selected, out, cv::Scalar(0,255,0));
-	imshow(*data.name, out);
+	imshow(*data.name, data.mask);
 }
 
 static void selectKPCallback( int event, int x, int y, int flags, void* userdata)
@@ -134,7 +132,8 @@ static void selectKPCallback( int event, int x, int y, int flags, void* userdata
 	if( event == cv::EVENT_MOUSEMOVE && (flags & cv::EVENT_FLAG_LBUTTON) ) 
 	{
 		cv::Point2f pt(x, y);
-		for(const auto& kp: *(data->original))
+		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(255),-1,8,0);
+		/*for(const auto& kp: *(data->original))
 		{
 			if(cv::norm(pt-kp.pt)<brush_size)
 			{
@@ -148,7 +147,9 @@ static void selectKPCallback( int event, int x, int y, int flags, void* userdata
 			{
 				return cv::norm(pt-kp.pt)<brush_size;
 			}
-		), data->original->end());
+		), data->original->end());*/
+
+
 		
 		data->count += 1;
 		if(data->count>10)
@@ -160,7 +161,7 @@ static void selectKPCallback( int event, int x, int y, int flags, void* userdata
 	if( event == cv::EVENT_MOUSEMOVE && (flags & cv::EVENT_FLAG_RBUTTON) ) 
 	{
 		cv::Point2f pt(x, y);
-		for(const auto& kp: *(data->selected))
+		/*for(const auto& kp: *(data->selected))
 		{
 			if(cv::norm(pt-kp.pt)<brush_size)
 			{
@@ -174,7 +175,8 @@ static void selectKPCallback( int event, int x, int y, int flags, void* userdata
 			{
 				return cv::norm(pt-kp.pt)<brush_size;
 			}
-		), data->selected->end());
+		), data->selected->end());*/
+		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(1.,1.,1.),-1,8,0);
 		
 		data->count += 1;
 		if(data->count>10)
@@ -190,12 +192,13 @@ static void selectKPCallback( int event, int x, int y, int flags, void* userdata
 	}
 }
 
-unsigned int selectKeypoints(cv::String name, cv::Mat& img, std::vector<cv::KeyPoint>& keypoints, std::vector<cv::KeyPoint>& selected, unsigned int brushSize)
+unsigned int selectKeypoints(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned int brushSize)
 {
 	KPCallbackData data;
-	data.original = &keypoints;
-	data.selected = &selected;
+	//data.original = &keypoints;
+	//data.selected = &selected;
 	data.img = &img;
+	data.mask = &mask;
 	data.name = &name;
 	data.brushSize = brushSize;
 	

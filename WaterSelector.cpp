@@ -47,6 +47,7 @@ int main(int argc, char** argv)
 				cv::Mat img = cv::imread(fn);
 				std::vector<cv::KeyPoint> keypoints;
 				std::vector<cv::KeyPoint> selected;
+				cv::Mat temp_mask = cv::Mat(img.size(), CV_8UC1);
 				
 				// find keypoints
 				
@@ -55,7 +56,7 @@ int main(int argc, char** argv)
 				
 				// allow the user to select water keypoints over the image
 
-				brushSize = selectKeypoints("WaterSelector", img, keypoints, selected, brushSize);
+				brushSize = selectKeypoints("WaterSelector", img, temp_mask, brushSize);
 				std::cout<<"  of which "<<selected.size()<<" water and "<<keypoints.size()<<" non-water.\n\n";
 				
 				// transform keypoints to a mask of segements
