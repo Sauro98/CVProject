@@ -52,6 +52,15 @@ bool filenamesMatch(const cv::String& f1, const cv::String& f2)
 			f1.substr(0,f1.size()-4) == f2.substr(0,f1.size()-4);
 }
 
+bool maskFilenamesMatch(const cv::String& mask, const cv::String& base)
+{
+	return base.substr(base.size()-(4+5)) == "_mask.png" or 
+	(
+		mask.size() == (base.size()+ 5) and // 5 = "_mask".size()
+		mask.substr(0,mask.size()-(4+5)) == base.substr(0,base.size()-4)
+	);
+}
+
 void drawROIs(cv::Mat& img, std::vector<cv::Rect>& ROIs)
 {
 	for(const auto& ROI: ROIs)
@@ -315,5 +324,5 @@ void showMask(cv::String name, cv::Mat& img, cv::Mat& mask)
 
 void saveMask(cv::String baseName, cv::Mat& mask)
 {
-	cv::imwrite(baseName+".png", mask);
+	cv::imwrite(baseName+"_mask.png", mask);
 }
