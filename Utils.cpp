@@ -112,6 +112,7 @@ typedef struct {
 	cv::String* name;
 	unsigned int brushSize = 20;
 	unsigned int count = 0;
+	cv::Point prevPt;
 } SeaCallbackData;
 
 void updateSeaImage(SeaCallbackData& data)
@@ -129,8 +130,14 @@ static void selectSeaCallback( int event, int x, int y, int flags, void* userdat
 	
 	if( event == cv::EVENT_MOUSEMOVE && (flags & cv::EVENT_FLAG_LBUTTON) ) 
 	{
-		cv::Point2f pt(x, y);
-		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(255,255,255),-1,8,0);
+		cv::Point pt(x, y);
+		if (data->prevPt.x == -1 && data->prevPt.y == -1) {
+			data->prevPt = pt;
+		} 
+		cv::line(*data->mask, data->prevPt, pt, cv::Scalar(255,255,255), data->brushSize,8,0);
+		data->prevPt=pt;
+		
+		//cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(255,255,255),-1,8,0);
 		data->count += 1;
 		if(data->count>10)
 		{
@@ -140,8 +147,12 @@ static void selectSeaCallback( int event, int x, int y, int flags, void* userdat
 	}
 	if( event == cv::EVENT_MOUSEMOVE && (flags & cv::EVENT_FLAG_RBUTTON) ) 
 	{
-		cv::Point2f pt(x, y);
-		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(0,0,0),-1,8,0);
+		cv::Point pt(x, y);
+		if (data->prevPt.x == -1 && data->prevPt.y == -1) {
+			data->prevPt = pt;
+		} 
+		cv::line(*data->mask, data->prevPt, pt, cv::Scalar(0,0,0), data->brushSize,8,0);
+		data->prevPt=pt;
 		data->count += 1;
 		if(data->count>10)
 		{
@@ -149,9 +160,21 @@ static void selectSeaCallback( int event, int x, int y, int flags, void* userdat
 			data->count = 0;
 		}
 	}
+
 	
-	if( event == cv::EVENT_LBUTTONUP || !(flags & cv::EVENT_FLAG_LBUTTON) )
+	if( event == cv::EVENT_LBUTTONUP )
 	{
+		updateSeaImage(*data);
+		data->prevPt = cv::Point(-1,-1);
+	} else if( event == cv::EVENT_RBUTTONUP )
+	{
+		updateSeaImage(*data);
+		data->prevPt = cv::Point(-1,-1);
+	}else if( event == cv::EVENT_LBUTTONDOWN ){
+        data->prevPt = cv::Point(x,y);
+	} else if( event == cv::EVENT_RBUTTONDOWN ){
+        data->prevPt = cv::Point(x,y);
+	}else if (!(flags & cv::EVENT_FLAG_LBUTTON)) {
 		updateSeaImage(*data);
 	}
 }
@@ -162,6 +185,7 @@ unsigned int selectSea(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned in
 	data.img = &img;
 	data.mask = &mask;
 	data.name = &name;
+	data.prevPt = cv::Point(-1,-1);
 	data.brushSize = brushSize;
 	
 	updateSeaImage(data);
