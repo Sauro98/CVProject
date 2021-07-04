@@ -39,6 +39,10 @@ void saveROIs(cv::String baseName, std::vector<cv::Rect>& ROIs);
 /// long extensions.
 bool filenamesMatch(const cv::String& f1, const cv::String& f2);
 
+/// Returns true if the filenames match excluding their extensions and the "_mask" suffix. Assumes 3 charachters
+/// long extensions.
+bool maskFilenamesMatch(const cv::String& mask, const cv::String& base);
+
 /// Updates `img` by drawing all the ROIs contained in `ROIs` with a thin red line.
 void drawROIs(cv::Mat& img, std::vector<cv::Rect>& ROIs);
 
