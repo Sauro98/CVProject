@@ -237,8 +237,8 @@ static void help()
 
 cv::Mat sharpen_img(cv::Mat& input){
     Mat imgLaplacian, sharp;
-    cv::Laplacian(input, imgLaplacian, CV_32F);
-    cv::GaussianBlur(input, sharp,cv::Size(5,5),0);
+    //cv::Laplacian(input, imgLaplacian, CV_32F);
+    cv::GaussianBlur(input, sharp,cv::Size(3,3),0);
     cv::Laplacian(sharp, imgLaplacian, CV_32F);
     sharp.convertTo(sharp, CV_32F);
     Mat imgResult = sharp - imgLaplacian;
@@ -250,29 +250,18 @@ cv::Mat sharpen_img(cv::Mat& input){
 }
 
 cv::Mat drawMarkers(KeyPointsHolder& kps, cv::Size img_size) {
+
     cv::Mat markers = cv::Mat::zeros(img_size, CV_8U);
+    
+    cv::circle( markers, cv::Point2f(1,1),1, Scalar::all(3), -1, 8, 0 );
     for (int i = 0; i < kps.original.size() - 1; i++) {
             cv::Point2f pti = kps.original[i].pt;
-        cv::circle( markers, pti,1, Scalar::all(255), -1, 8, 0 );
-        /*for (int j = i; j < kps.original.size(); j++) {
-            cv::Point2f ptj = kps.original[j].pt;
-            double dist = cv::norm(pti - ptj);
-            //if (dist < 50. && dist > 5.) {
-            //    cv::line( markers, pti,ptj, Scalar::all(1.), 5, 8, 0 );
-            //}
-        }*/
+        cv::circle( markers, pti,1, Scalar::all(2), -1, 8, 0 );
     }
 
     for (int i = 0; i < kps.selected.size() - 1; i++) {
         cv::Point2f pti = kps.selected[i].pt;
-        cv::circle( markers, pti,1, Scalar::all(255), -1, 8, 0 );
-        /*for (int j = i; j < kps.selected.size(); j++) {
-            cv::Point2f ptj = kps.selected[j].pt;
-            double dist = cv::norm(pti - ptj);
-            /*if (dist < 50.) {
-                cv::line( markers, pti,ptj, Scalar::all(255), 5, 8, 0 );
-            }
-        }*/
+        cv::circle( markers, pti,1, Scalar::all(1), -1, 8, 0 );
     }
 
     return markers;
@@ -330,12 +319,12 @@ int main( int argc, char** argv )
     //cvtColor(img0, img0, COLOR_BGR2GRAY);
     Mat edges = sharpen_img(imgGray);
     imgGray.copyTo(img);
-    Canny(imgGray, edges, 20, 100, 3);
-    equalizeHist(edges, edges);
-    threshold(edges, edges, 10, 255, THRESH_BINARY);
-    cvtColor(edges, edges, COLOR_GRAY2BGR);
-    namedWindow( "edges");
-    imshow( "edges", edges );
+    //Canny(imgGray, edges, 20, 100, 3);
+    //equalizeHist(edges, edges);
+    //threshold(edges, edges, 10, 255, THRESH_BINARY);
+    //cvtColor(edges, edges, COLOR_GRAY2BGR);
+    //namedWindow( "edges");
+    //imshow( "edges", edges );
     
     /*threshold(edges, edges, 10, 255, THRESH_BINARY);
     edges = ~edges;
@@ -357,7 +346,7 @@ int main( int argc, char** argv )
     
     KeyPointsHolder kps;
     cv::Ptr<cv::Feature2D> sift = cv::SIFT::create();
-    sift->detect(img0, kps.original);
+    sift->detect(img, kps.original);
     markerMask = Scalar::all(0);
     cv::drawKeypoints(img,kps.original,img, RED);
     cv::drawKeypoints(img,kps.selected,img, GREEN);
@@ -394,16 +383,23 @@ int main( int argc, char** argv )
             markerMask = drawMarkers(kps, img0.size())/* dist.convertTo(markerMask, CV_8UC1)*/;
             Mat cvt;
 
+            cv::imshow("markers",markerMask);
+
             //markerMask.convertTo(cvt, CV_8U);
             //namedWindow( "mmmask");
             //imshow( "mmmask", markerMask );
             
-            findContours(markerMask, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
+            /*findContours(markerMask, contours, hierarchy, RETR_CCOMP, CHAIN_APPROX_SIMPLE);
 
             if( contours.empty() )
-                continue;
+                continue;*/
+            //Mat markers(markerMask.size(), CV_32S);
             Mat markers(markerMask.size(), CV_32S);
-            markers = Scalar::all(0);
+            markerMask.convertTo(markers, CV_32S);
+
+            //cv::imshow("markers2",markers);
+
+            /*markers = Scalar::all(0);
             int idx = 0;
             for( ; idx >= 0; idx = hierarchy[idx][0], compCount++ )
                 drawContours(markers, contours, idx, Scalar::all(compCount+1), -1, 8, hierarchy, INT_MAX);
@@ -421,7 +417,7 @@ int main( int argc, char** argv )
                 int r = theRNG().uniform(0, 0);
 
                 colorTab.push_back(Vec3b((uchar)b, (uchar)g, (uchar)r));
-            }
+            }*/
 
             double t = (double)getTickCount();
             watershed( img0, markers );
@@ -434,23 +430,25 @@ int main( int argc, char** argv )
 
             Mat wshed(markers.size(), CV_8UC3);
 
-            auto sea_indexes = get_sea_indexes(kps, markers);
+            //auto sea_indexes = get_sea_indexes(kps, markers);
 
             // paint the watershed image
             for( i = 0; i < markers.rows; i++ )
                 for( j = 0; j < markers.cols; j++ )
                 {
                     int index = markers.at<int>(i,j);
-                    if(std::find(sea_indexes.begin(), sea_indexes.end(), index) != sea_indexes.end()) {
+                    /*if(std::find(sea_indexes.begin(), sea_indexes.end(), index) != sea_indexes.end()) {
                         wshed.at<Vec3b>(i,j) = Vec3b(0,0,255);
-                    } 
-                    else 
+                    }*/ 
+                    //else 
                     if( index == -1 )
                         wshed.at<Vec3b>(i,j) = Vec3b(255,255,255);
-                    else if( index <= 0 || index > compCount )
-                        wshed.at<Vec3b>(i,j) = Vec3b(0,0,0);
+                    else if (index == 1)
+                        wshed.at<Vec3b>(i,j) = Vec3b(255,0,0);
+                    else if (index == 2)
+                        wshed.at<Vec3b>(i,j) = Vec3b(0,0,255);
                     else
-                        wshed.at<Vec3b>(i,j) = colorTab[index - 1];
+                        wshed.at<Vec3b>(i,j) = Vec3b(0,255,0);
                 }
             Mat bg;
             cvtColor(imgGray, bg, COLOR_GRAY2BGR);
