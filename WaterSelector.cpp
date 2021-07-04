@@ -15,9 +15,11 @@ int main(int argc, char** argv)
 	std::vector<cv::String> filenames;
 	std::vector<cv::String> done;
 	cv::utils::fs::glob(cv::String(argv[1]), cv::String("*.jpg"), filenames);
-	cv::utils::fs::glob(cv::String(argv[1]), cv::String("*.png"), done);
+	cv::utils::fs::glob(cv::String(argv[1]), cv::String("*.png"), filenames);
+	cv::utils::fs::glob(cv::String(argv[1]), cv::String("*_mask.png"), done);
+	
 	cv::namedWindow("WaterSelector");
-	std::cout<<filenames.size()<<" images found\n\n";
+	std::cout<<filenames.size()-done.size()<<" images found\n\n";
 	
 	unsigned int brushSize = 20;
 
@@ -31,7 +33,7 @@ int main(int argc, char** argv)
 			for(const auto& dn: done)
 			{
 				// if there is then the water was already selected and this image can be skipped.
-				if(filenamesMatch(fn,dn))
+				if(maskFilenamesMatch(dn,fn))
 				{
 					skip = true;
 					break;
