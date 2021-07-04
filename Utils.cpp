@@ -107,23 +107,21 @@ double median(cv::Mat& img)
 }
 
 typedef struct {
-    /*std::vector<cv::KeyPoint>* original;
-    std::vector<cv::KeyPoint>* selected;*/
 	cv::Mat* mask;
 	cv::Mat* img;
 	cv::String* name;
 	unsigned int brushSize = 20;
 	unsigned int count = 0;
-} KPCallbackData;
+} SeaCallbackData;
 
-void updateKPImage(KPCallbackData& data)
+void updateSeaImage(SeaCallbackData& data)
 {
-	imshow(*data.name, data.mask);
+	showMask(*data.name, *data.img, *data.mask);
 }
 
-static void selectKPCallback( int event, int x, int y, int flags, void* userdata)
+static void selectSeaCallback( int event, int x, int y, int flags, void* userdata)
 {
-	KPCallbackData* data = (KPCallbackData*)userdata;
+	SeaCallbackData* data = (SeaCallbackData*)userdata;
 	const double brush_size = data->brushSize;
 	
     if( x < 0 || x >= data->img->cols || y < 0 || y >= data->img->rows )
@@ -132,78 +130,42 @@ static void selectKPCallback( int event, int x, int y, int flags, void* userdata
 	if( event == cv::EVENT_MOUSEMOVE && (flags & cv::EVENT_FLAG_LBUTTON) ) 
 	{
 		cv::Point2f pt(x, y);
-		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(255),-1,8,0);
-		/*for(const auto& kp: *(data->original))
-		{
-			if(cv::norm(pt-kp.pt)<brush_size)
-			{
-				data->selected->push_back(kp);
-			}
-		}
-		data->original->erase( std::remove_if
-		(
-			data->original->begin(), data->original->end(),
-			[pt,brush_size](const cv::KeyPoint& kp)
-			{
-				return cv::norm(pt-kp.pt)<brush_size;
-			}
-		), data->original->end());*/
-
-
-		
+		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(255,255,255),-1,8,0);
 		data->count += 1;
 		if(data->count>10)
 		{
-			updateKPImage(*data);
+			updateSeaImage(*data);
 			data->count = 0;
 		}
 	}
 	if( event == cv::EVENT_MOUSEMOVE && (flags & cv::EVENT_FLAG_RBUTTON) ) 
 	{
 		cv::Point2f pt(x, y);
-		/*for(const auto& kp: *(data->selected))
-		{
-			if(cv::norm(pt-kp.pt)<brush_size)
-			{
-				data->original->push_back(kp);
-			}
-		}
-		data->selected->erase( std::remove_if
-		(
-			data->selected->begin(), data->selected->end(),
-			[pt,brush_size](const cv::KeyPoint& kp)
-			{
-				return cv::norm(pt-kp.pt)<brush_size;
-			}
-		), data->selected->end());*/
-		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(1.,1.,1.),-1,8,0);
-		
+		cv::circle(*data->mask, pt, data->brushSize, cv::Scalar(0,0,0),-1,8,0);
 		data->count += 1;
 		if(data->count>10)
 		{
-			updateKPImage(*data);
+			updateSeaImage(*data);
 			data->count = 0;
 		}
 	}
 	
 	if( event == cv::EVENT_LBUTTONUP || !(flags & cv::EVENT_FLAG_LBUTTON) )
 	{
-		updateKPImage(*data);
+		updateSeaImage(*data);
 	}
 }
 
-unsigned int selectKeypoints(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned int brushSize)
+unsigned int selectSea(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned int brushSize)
 {
-	KPCallbackData data;
-	//data.original = &keypoints;
-	//data.selected = &selected;
+	SeaCallbackData data;
 	data.img = &img;
 	data.mask = &mask;
 	data.name = &name;
 	data.brushSize = brushSize;
 	
-	updateKPImage(data);
-	cv::setMouseCallback(name, selectKPCallback, &data);
+	updateSeaImage(data);
+	cv::setMouseCallback(name, selectSeaCallback, &data);
 	while(true)
 	{
 		int pressed = cv::waitKey(0);
@@ -314,14 +276,17 @@ void showMask(cv::String name, cv::Mat& img, cv::Mat& mask)
 {
 	cv::Mat foreground;
 	cv::Mat background;
-	cv::cvtColor(mask,foreground,cv::COLOR_GRAY2BGR);
+	if (mask.channels() == 1) {
+		cv::cvtColor(mask,foreground,cv::COLOR_GRAY2BGR);
+	} else {
+		foreground = mask;
+	}
 	foreground.convertTo(foreground, CV_32FC3, 0.85/255.0);
 	img.convertTo(background, CV_32FC3, 1/255.0);
 	cv::multiply(foreground, foreground, foreground);
 	cv::multiply(cv::Scalar::all(1.0)-foreground, background, background);
 	cv::add(foreground, background, background);
 	imshow(name,background);
-	cv::waitKey(0);
 }
 
 void saveMask(cv::String baseName, cv::Mat& mask)
