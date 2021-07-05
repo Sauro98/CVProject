@@ -15,3 +15,9 @@ target_link_libraries(BBoxSelector stdc++)
 add_executable(bw_he BlackWhite_He.cpp)
 target_link_libraries(bw_he ${OpenCV_LIBS})
 target_link_libraries(bw_he stdc++)
+
+add_executable(BuildDataset BuildDataset.cpp Utils.cpp)
+target_link_libraries(BuildDataset ${OpenCV_LIBS})
+target_link_libraries(BuildDataset stdc++)
+
+add_executable(TrainAnn TrainAnn.cpp ANN.cpp)
