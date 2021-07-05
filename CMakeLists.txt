@@ -15,3 +15,7 @@ target_link_libraries(BBoxSelector stdc++)
 add_executable(bw_he BlackWhite_He.cpp)
 target_link_libraries(bw_he ${OpenCV_LIBS})
 target_link_libraries(bw_he stdc++)
+
+add_executable(test_siftmasked test_siftMasked.cpp)
+target_link_libraries(test_siftmasked ${OpenCV_LIBS})
+target_link_libraries(test_siftmasked stdc++)
