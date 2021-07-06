@@ -74,7 +74,7 @@ public:
     }
 
     //find and return features of an image given a binary mask
-    vector<KeyPoint> findFeatures(const Mat &img, const Mat& mask, Mat &descriptor_img, Mat &result_img) {
+    vector<KeyPoint> findFeatures(const Mat &img, const Mat& mask, Mat &descriptor_img) {
         vector<KeyPoint> keypoints_img;
 
         Ptr<Feature2D> f2d = SIFT::create();
