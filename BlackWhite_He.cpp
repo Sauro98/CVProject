@@ -75,7 +75,7 @@ int main(int argc, char** argv) {
             else {
                 optionalcmd = "HSVhe_";
             }
-            result_img = preproc_img.hsv_HE_to_gray(img);
+            result_img = preproc_img.hsv_HE_to_gray(img,sharp);
             images.push_back(result_img);
             int beg_str = String(argv[1]).size() + 1;
             int len_str = (int)fn.size()-(4+beg_str);
