@@ -83,10 +83,25 @@ public:
         vector<KeyPoint> keypoints_img;
 
         Ptr<Feature2D> f2d = SIFT::create();
-        f2d->detectAndCompute(img, mask, keypoints_img, descriptor_img);
+        if(not mask.empty())
+        {
+            f2d->detectAndCompute(img, mask, keypoints_img, descriptor_img);
+        }
+        else
+        {
+            f2d->detectAndCompute(img, noArray(), keypoints_img, descriptor_img);
+        }
+        
 
         return keypoints_img;
 
+    }
+
+    void findDescriptors(const Mat &img, std::vector<KeyPoint> & keypoints, Mat &descriptor_img) {
+        vector<KeyPoint> keypoints_img;
+
+        Ptr<Feature2D> f2d = SIFT::create();
+        f2d->compute(img, keypoints, descriptor_img);
     }
 
 };
