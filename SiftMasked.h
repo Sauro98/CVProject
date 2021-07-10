@@ -1,4 +1,7 @@
 
+#ifndef SIFT_MASKED_H
+#define SIFT_MASKED_H
+
 #include <iostream>
 #include <fstream>
 #include <opencv2/features2d.hpp>
@@ -61,7 +64,7 @@ public:
     }
 
     //draw a binary mask based on rects
-    Mat findBinMask(Mat img, vector<Rect> rects)
+    Mat findBinMask(Mat img, vector<Rect>& rects)
     {
         Mat col = Mat::zeros(Size(img.cols, img.rows), CV_8UC1);
 
@@ -86,3 +89,4 @@ public:
 
 };
 
+#endif
