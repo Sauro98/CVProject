@@ -6,6 +6,7 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
+#include "Utils.cpp"
 
 
 
@@ -16,17 +17,23 @@ class BlackWhite_He{
     public:
         BlackWhite_He() = default;
 
-        //converting an image to BGR to GRAYScale and doing the histogram equalization of it
-        Mat bgr_to_gray_HE(Mat image){
+        //converting an image to BGR to GRAYScale and doing the histogram equalization of it; if the bool
+        //parameter is true than also a sharpening of the image is performed.
+        Mat bgr_to_gray_HE(Mat image, bool shouldSharpen){
 
             Mat gray_img, grayhist_equal;
             cvtColor(image,gray_img,COLOR_BGR2GRAY);
-            equalizeHist(gray_img, grayhist_equal); //this part should be commented if you are using hist_eq on RGB or HSV space
+            equalizeHist(gray_img, grayhist_equal); 
+            if(shouldSharpen)
+                {
+                    sharpen(grayhist_equal, grayhist_equal);
+                }
             return grayhist_equal;
         };
     
-        //this function do hist_eq on RGB space and then the conversion on Grayscale
-        Mat bgr_HE_to_gray(Mat image){
+        //this function do hist_eq on RGB space and then the conversion on Grayscale; if the bool
+        //parameter is true than also a sharpening of the image is performed.
+        Mat bgr_HE_to_gray(Mat image, bool shouldSharpen){
 
             Mat histchannel_eq, gray_img, equalRGB_img ;
             vector<Mat> rgb_plane, rgbimg_eq;
@@ -38,13 +45,18 @@ class BlackWhite_He{
             }
             merge(rgbimg_eq, equalRGB_img);
             cvtColor(equalRGB_img,gray_img,COLOR_BGR2GRAY);
+            if(shouldSharpen)
+            {
+                sharpen(gray_img, gray_img);
+            }
             return gray_img;
 
         };
     
     
-        //this function do hist_eq on HSV space and then the conversion on Grayscale
-        Mat hsv_HE_to_gray(Mat image){
+        //this function do hist_eq on HSV space and then the conversion on Grayscale; if the bool
+        //parameter is true than also a sharpening of the image is performed.
+        Mat hsv_HE_to_gray(Mat image, bool shouldSharpen){
 
             Mat hsv_img,result_imgInV;
             vector<Mat> hsv_plane,hsvimg_eq;
@@ -52,6 +64,10 @@ class BlackWhite_He{
             split(hsv_img,hsv_plane);
             equalizeHist(hsv_plane[2],result_imgInV); //the equalization should be done in the V channel,
                 // and a conversion to gray is not necessary since this channel is actually the grayscale of the image
+            if(shouldSharpen)
+            {
+                sharpen(result_imgInV, result_imgInV);
+            }
             return result_imgInV;
 
         };

@@ -4,9 +4,11 @@
 #include <string>
 #include <fstream>
 #include <vector>
+#include <iostream>
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/features2d/features2d.hpp>
 
 
 /// Utility function to load a set of bounding boxes from a txt file.
@@ -37,7 +39,17 @@ void saveROIs(cv::String baseName, std::vector<cv::Rect>& ROIs);
 /// long extensions.
 bool filenamesMatch(const cv::String& f1, const cv::String& f2);
 
+/// Returns true if the filenames match excluding their extensions and the "_mask" suffix. Assumes 3 charachters
+/// long extensions.
+bool maskFilenamesMatch(const cv::String& mask, const cv::String& base);
+
 /// Updates `img` by drawing all the ROIs contained in `ROIs` with a thin red line.
 void drawROIs(cv::Mat& img, std::vector<cv::Rect>& ROIs);
+
+unsigned int selectSea(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned int brushSize);
+void findAllKeypoints(cv::Mat& img, std::vector<cv::KeyPoint>& keypoints, bool shouldSharpen = true);
+void createMask(cv::Mat& img, std::vector<cv::KeyPoint>& background, std::vector<cv::KeyPoint>& foreground, cv::Mat& mask);
+void showMask(cv::String name, cv::Mat& img, cv::Mat& mask);
+void saveMask(cv::String baseName, cv::Mat& mask);
 
 #endif // __UTILS_HPP_INCLUDED__
