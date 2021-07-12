@@ -20,6 +20,6 @@ add_executable(bw_he BlackWhite_He.cpp Utils.cpp)
 target_link_libraries(bw_he ${OpenCV_LIBS})
 target_link_libraries(bw_he stdc++)
 
-add_executable(bseadetector BoatSeaDetector.cpp Utils.cpp)
+add_executable(bseadetector BoatSeaDetector.cpp Utils.cpp SegmentationHelper.cpp)
 target_link_libraries(bseadetector ${OpenCV_LIBS})
 target_link_libraries(bseadetector stdc++)
