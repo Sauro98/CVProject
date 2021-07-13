@@ -52,13 +52,21 @@ bool filenamesMatch(const cv::String& f1, const cv::String& f2)
 			f1.substr(0,f1.size()-4) == f2.substr(0,f1.size()-4);
 }
 
-bool maskFilenamesMatch(const cv::String& mask, const cv::String& base)
+bool maskFilenamesMatch(const cv::String& mask, const cv::String& base, bool boat)
 {
-	return base.substr(base.size()-(4+5)) == "_mask.png" or 
-	(
-		mask.size() == (base.size()+ 5) and // 5 = "_mask".size()
-		mask.substr(0,mask.size()-(4+5)) == base.substr(0,base.size()-4)
-	);
+	if (boat){
+		return base.substr(base.size()-(4+5)) == "_maskb.png" or 
+		(
+			mask.size() == (base.size()+ 6) and // 6 = "_maskb".size()
+			mask.substr(0,mask.size()-(4+6)) == base.substr(0,base.size()-4)
+		);
+	} else {
+		return base.substr(base.size()-(4+5)) == "_mask.png" or 
+		(
+			mask.size() == (base.size()+ 5) and // 5 = "_mask".size()
+			mask.substr(0,mask.size()-(4+5)) == base.substr(0,base.size()-4)
+		);
+	}
 }
 
 void drawROIs(cv::Mat& img, std::vector<cv::Rect>& ROIs)
@@ -122,11 +130,12 @@ typedef struct {
 	unsigned int brushSize = 20;
 	unsigned int count = 0;
 	cv::Point prevPt;
+	bool boat;
 } SeaCallbackData;
 
 void updateSeaImage(SeaCallbackData& data)
 {
-	showMask(*data.name, *data.img, *data.mask);
+	showMask(*data.name, *data.img, *data.mask, data.boat);
 }
 
 static void selectSeaCallback( int event, int x, int y, int flags, void* userdata)
@@ -188,7 +197,7 @@ static void selectSeaCallback( int event, int x, int y, int flags, void* userdat
 	}
 }
 
-unsigned int selectSea(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned int brushSize)
+unsigned int selectSea(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned int brushSize, bool boat)
 {
 	SeaCallbackData data;
 	data.img = &img;
@@ -196,6 +205,7 @@ unsigned int selectSea(cv::String name, cv::Mat& img, cv::Mat& mask, unsigned in
 	data.name = &name;
 	data.prevPt = cv::Point(-1,-1);
 	data.brushSize = brushSize;
+	data.boat = boat;
 	
 	updateSeaImage(data);
 	cv::setMouseCallback(name, selectSeaCallback, &data);
@@ -305,24 +315,40 @@ void createMask(cv::Mat& img, std::vector<cv::KeyPoint>& background, std::vector
 	markers.convertTo(mask, CV_8U);
 }
 
-void showMask(cv::String name, cv::Mat& img, cv::Mat& mask)
+void showMask(cv::String name, cv::Mat& img, cv::Mat& mask, bool boat)
 {
 	cv::Mat foreground;
 	cv::Mat background;
 	if (mask.channels() == 1) {
 		cv::cvtColor(mask,foreground,cv::COLOR_GRAY2BGR);
 	} else {
-		foreground = mask;
+		foreground = mask.clone();
 	}
+
+	cv::Mat channels[3];
+	cv::split(foreground, channels);
+	if(boat) {
+		channels[0] *= 0;
+		channels[2] *= 0;
+	} else {	
+		channels[0] *= 0;
+		channels[1] *= 0;
+	}
+	cv::merge(&channels[0], 3, foreground);
+	
+
 	foreground.convertTo(foreground, CV_32FC3, 0.85/255.0);
-	img.convertTo(background, CV_32FC3, 1/255.0);
+	img.convertTo(background, CV_32FC3, 0.85/255.0);
 	cv::multiply(foreground, foreground, foreground);
 	cv::multiply(cv::Scalar::all(1.0)-foreground, background, background);
 	cv::add(foreground, background, background);
 	imshow(name,background);
 }
 
-void saveMask(cv::String baseName, cv::Mat& mask)
+void saveMask(cv::String baseName, cv::Mat& mask, bool boat)
 {
-	cv::imwrite(baseName+"_mask.png", mask);
+	if(boat)
+		cv::imwrite(baseName+"_maskb.png", mask);
+	else
+		cv::imwrite(baseName+"_mask.png", mask);
 }

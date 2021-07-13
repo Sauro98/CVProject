@@ -8,7 +8,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_executable(WaterSelector WaterSelector.cpp Utils.cpp)
+add_executable(WaterSelector WaterSelector.cpp Utils.cpp SegmentationHelper.cpp)
 target_link_libraries(WaterSelector ${OpenCV_LIBS})
 target_link_libraries(WaterSelector stdc++)
 
