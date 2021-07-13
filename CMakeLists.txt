@@ -25,3 +25,8 @@ target_link_libraries(BuildDataset ${OpenCV_LIBS})
 target_link_libraries(BuildDataset stdc++)
 
 add_executable(DecisionTree DecisionTree_class_and_test.cpp)
+
+add_executable(test_siftmasked test_siftMasked.cpp)
+target_link_libraries(test_siftmasked ${OpenCV_LIBS})
+target_link_libraries(test_siftmasked stdc++)
+

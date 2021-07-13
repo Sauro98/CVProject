@@ -9,14 +9,21 @@ using namespace std;
 
 
 int main(int argc, char** argv) {
-
-
-       if (argc != 3 ) {
+       
+     bool sharp = false;
+       
+     if (argc != 3 ) {
             if(argc == 4)
-            {}
+            {
+                   sharp = strcmp(argv[3],"-sh")==0;
+            }
+            else if(argc == 5)
+            {
+                   sharp = strcmp(argv[4],"-sh")==0;
+            }
             else
             {
-                    printf("usage: ./filename <Image_Directory> <Format_of_images: ex. *.bmp or *.png> <Optional command (-hsv or -rgb)>\n");
+                    printf("usage: ./filename <Image_Directory> <Format_of_images: ex. *.bmp or *.png> <Optional command (-hsv or -rgb or/and -sh)>\n");
                     return -1;
             }
         }
@@ -42,10 +49,16 @@ int main(int argc, char** argv) {
         BlackWhite_He preproc_img = BlackWhite_He();
             
         //calling functions of the class
-        if(argc == 4 and strcmp(argv[3],"-rgb")==0)
+        if((argc == 4 || argc == 5) and strcmp(argv[3],"-rgb")==0)
         {
-            optionalcmd = "RGBhe_";
-            result_img = preproc_img.bgr_HE_to_gray(img);
+            if(sharp)
+            {
+                optionalcmd = "RGBhe_sh_";
+            }
+            else {
+                optionalcmd = "RGBhe_";
+            }
+            result_img = preproc_img.bgr_HE_to_gray(img, sharp);
             images.push_back(result_img);
             int beg_str = String(argv[1]).size() + 1;
             int len_str = (int)fn.size()-(4+beg_str);
@@ -53,10 +66,16 @@ int main(int argc, char** argv) {
             output_names.push_back(name);
         }
 
-        else if(argc == 4 and strcmp(argv[3],"-hsv")==0)
+        else if((argc == 4 || argc == 5) and strcmp(argv[3],"-hsv")==0)
         {
-            optionalcmd = "HSVhe_";
-            result_img = preproc_img.hsv_HE_to_gray(img);
+            if(sharp)
+            {
+                optionalcmd = "HSVhe_sh_";
+            }
+            else {
+                optionalcmd = "HSVhe_";
+            }
+            result_img = preproc_img.hsv_HE_to_gray(img,sharp);
             images.push_back(result_img);
             int beg_str = String(argv[1]).size() + 1;
             int len_str = (int)fn.size()-(4+beg_str);
@@ -66,8 +85,15 @@ int main(int argc, char** argv) {
 
         else
         {
-            optionalcmd = "";
-            result_img = preproc_img.bgr_to_gray_HE(img);
+            if(sharp)
+            {
+                optionalcmd = "Sh_";
+            }
+            else {
+                optionalcmd = "";
+            }
+            
+            result_img = preproc_img.bgr_to_gray_HE(img, sharp);
             images.push_back(result_img);
             int beg_str = String(argv[1]).size() + 1;
             int len_str = (int)fn.size()-(4+beg_str);
