@@ -84,9 +84,9 @@ void SegmentationInfo::showLabeledKps(){
 
 void SegmentationInfo::performSegmentation(bool showResults) {
     cv::Mat markersMask = cv::Mat::zeros(image.size(), CV_8U);
-    drawMarkers(markersMask,boatKps, cv::Scalar::all(1));
-    drawMarkers(markersMask,seaKps, cv::Scalar::all(2));
-    drawMarkers(markersMask,bgKps, cv::Scalar::all(3));
+    drawMarkers(markersMask,boatKps, cv::Scalar::all(BOAT_LABEL));
+    drawMarkers(markersMask,seaKps, cv::Scalar::all(SEA_LABEL));
+    drawMarkers(markersMask,bgKps, cv::Scalar::all(BG_LABEL));
 
     markersMask.convertTo(markersMask, CV_32S);
     
@@ -100,9 +100,9 @@ void SegmentationInfo::performSegmentation(bool showResults) {
             int index = markersMask.at<int>(r,c);
             if( index == -1 )
                 wshed.at<Vec3b>(r,c) = Vec3b(0,255,255);
-            else if (index == 1)
+            else if (index == BOAT_LABEL)
                 wshed.at<Vec3b>(r,c) = Vec3b(0,255,0);
-            else if (index == 2)
+            else if (index == SEA_LABEL)
                 wshed.at<Vec3b>(r,c) = Vec3b(0,0,255);
             else
                 wshed.at<Vec3b>(r,c) = Vec3b(255,0,0);
@@ -115,4 +115,34 @@ void SegmentationInfo::performSegmentation(bool showResults) {
         imshow( "watershed transform", wshed );
         waitKey(0);
     }
+}
+
+std::vector<double> SegmentationInfo::computeIOU(){
+    std::vector<double> ious;
+    SiftMasked smasked = SiftMasked();
+
+    // keep only green (boats) channel
+    cv::Mat boatsSegments = segmentationResult.clone();
+    cv::Mat chs[3];
+    cv::split(boatsSegments,chs);
+    boatsSegments = chs[1];
+
+    // erode mask with elements:
+    // 0 1 0
+    // 1 1 1
+    // 0 1 0
+    uchar erosionComponents[] = {0,1,0,1,1,1,0,1,0};
+    cv::Mat erosionElement = cv::Mat(3,3,CV_8UC1, erosionComponents);
+    cv::erode(boatsSegments, boatsSegments, erosionElement);
+
+    smasked.binaryToBBoxes(boatsSegments, estBboxes, true);
+
+    cv::Mat bboxes_img = image.clone();
+    for(auto& box: estBboxes) {
+        cv::rectangle(bboxes_img, box, cv::Scalar(0,255,0),3);
+    }
+
+    cv::imshow("bboxes", bboxes_img);
+    cv::waitKey(0);
+    return ious;
 }

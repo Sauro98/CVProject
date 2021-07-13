@@ -6,6 +6,10 @@
 #define BOAT_MASK_EXT "*_maskb.png"
 #define MASK_TOKEN "_mask"
 
+#define BOAT_LABEL 1
+#define SEA_LABEL 2
+#define BG_LABEL 3
+
 #include <iostream>
 #include <fstream>
 #include "SiftMasked.h"
@@ -18,13 +22,16 @@ void removeMasksFromImagesFnames(std::vector<cv::String>& fnames);
 
 class SegmentationInfo {
     public:
-        SegmentationInfo(cv::Mat image, cv::Mat seaMask, cv::Mat boatsMask, cv::Mat bgMask, std::vector<cv::Rect> bboxes): image(image), seaMask(seaMask), boatsMask(boatsMask), bgMask(bgMask), bboxes(bboxes) {};
+        SegmentationInfo(cv::Mat image, cv::Mat seaMask, cv::Mat boatsMask, cv::Mat bgMask, std::vector<cv::Rect> bboxes): image(image), seaMask(seaMask), boatsMask(boatsMask), bgMask(bgMask), trueBboxes(bboxes) {
+            estBboxes = std::vector<cv::Rect>();
+        };
         void computKeypoints(bool sharpen);
         void showLabeledKps();
         void performSegmentation(bool showResults);
+        std::vector<double> computeIOU();
 
     private: 
-        std::vector<cv::Rect> bboxes;
+        std::vector<cv::Rect> trueBboxes, estBboxes;
         cv::Mat image, seaMask, boatsMask, bgMask;
         cv::Mat boatDescriptors, seaDescriptors, bgDescriptors;
         cv::Mat segmentationResult;

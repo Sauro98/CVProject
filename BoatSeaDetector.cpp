@@ -16,7 +16,8 @@ int main(int argc, char** argv)
 
     for(auto& imageInfo: segmentationInfos) {
         imageInfo.computKeypoints(true);
-        imageInfo.showLabeledKps();
-        imageInfo.performSegmentation(true);
+        //imageInfo.showLabeledKps();
+        imageInfo.performSegmentation(false);
+        imageInfo.computeIOU();
     }
 }

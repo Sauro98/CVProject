@@ -30,7 +30,7 @@ int main(int argc, char** argv)
     waitKey(0);
 
     if(!argv[2]){
-        featImg.binaryToBBoxes(img,rects);
+        featImg.binaryToBBoxes(img,rects, false);
     }
 
     else{
