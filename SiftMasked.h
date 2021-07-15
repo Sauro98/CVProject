@@ -103,6 +103,17 @@ public:
         Ptr<Feature2D> f2d = SIFT::create();
         f2d->compute(img, keypoints, descriptor_img);
     }
+    
+    //find the intersection mask between BB and Sea so to eliminate those keypoints belonging to the Sea on boats
+    Mat findIntersectionMask(Mat maskBB, Mat maskSea)
+    {
+        Mat finalMaskBB, intersectMask, inv_intMask;
+        bitwise_and(maskBB, maskSea, intersectMask); //find keypoints to eliminate
+        bitwise_not(intersectMask,inv_intMask); //inversion of the mask provided by the intersection
+        bitwise_and(maskBB, inv_intMask, finalMaskBB ); //new maskBB
+
+        return finalMaskBB;
+    }
 
 };
 
