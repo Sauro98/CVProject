@@ -57,7 +57,7 @@ std::vector<SegmentationInfo> SegmentationHelper::loadInfos(bool boatsFromBBoxes
         seaMask.convertTo(seaMask, CV_8U);
         bgMask.convertTo(bgMask, CV_8U);
 
-        SegmentationInfo info = SegmentationInfo(original_img, seaMask, boatMask, bgMask, bboxes);
+        SegmentationInfo info = SegmentationInfo(original_img, seaMask, boatMask, bgMask, bboxes, filenames[i]);
         infos.push_back(info);
     }
     return infos;
@@ -79,7 +79,6 @@ void SegmentationInfo::showLabeledKps(){
     cv::drawKeypoints(kpImg, seaKps, kpImg, cv::Scalar(0,0,255));
     cv::drawKeypoints(kpImg, bgKps, kpImg, cv::Scalar(255,0,0));
     cv::imshow("kps", kpImg);
-    cv::waitKey(0);
 }
 
 void SegmentationInfo::performSegmentation(bool showResults) {
@@ -113,14 +112,10 @@ void SegmentationInfo::performSegmentation(bool showResults) {
     if (showResults) {
         wshed = wshed*0.5 + image*0.5;
         imshow( "watershed transform", wshed );
-        waitKey(0);
     }
 }
 
-std::vector<double> SegmentationInfo::computeIOU(){
-    std::vector<double> ious;
-    SiftMasked smasked = SiftMasked();
-
+cv::Mat getBoatsMaskErodedDilated(cv::Mat segmentationResult){
     // keep only green (boats) channel
     cv::Mat boatsSegments = segmentationResult.clone();
     cv::Mat chs[3];
@@ -128,21 +123,103 @@ std::vector<double> SegmentationInfo::computeIOU(){
     boatsSegments = chs[1];
 
     // erode mask with elements:
-    // 0 1 0
     // 1 1 1
-    // 0 1 0
-    uchar erosionComponents[] = {0,1,0,1,1,1,0,1,0};
+    // 1 1 1
+    // 1 1 1
+    uchar erosionComponents[] = {1,1,1,1,1,1,1,1,1};
     cv::Mat erosionElement = cv::Mat(3,3,CV_8UC1, erosionComponents);
     cv::erode(boatsSegments, boatsSegments, erosionElement);
+    // and then dilate
+    cv::dilate(boatsSegments, boatsSegments, erosionElement);
 
+    return boatsSegments;
+}
+
+void filterBoundingBoxesByArea(std::vector<cv::Rect>& bboxes, double ratio) {
+    double avg_area = 0;
+    for(auto& bbox: bboxes){
+        avg_area += (double)bbox.area();
+    }
+    avg_area /= (double)bboxes.size();
+
+    bboxes.erase(std::remove_if(bboxes.begin(), bboxes.end(), [avg_area, ratio](const cv::Rect& r) {
+        return r.area() <= ratio*avg_area;
+    }), bboxes.end());
+}
+
+std::vector<cv::Mat> masksForBoxes(std::vector<cv::Rect>& boxes, cv::Size img_size) {
+    std::vector<cv::Mat> masks;
+    for(const auto& b: boxes){
+        cv::Mat mask = cv::Mat::zeros(img_size, CV_8UC1);
+        cv::rectangle(mask,b,cv::Scalar(1),-1, LINE_8);
+        masks.push_back(mask);
+    }
+    return masks;
+}
+
+std::vector<double> SegmentationInfo::computeIOU(bool showBoxes){
+    std::vector<double> ious;
+    SiftMasked smasked = SiftMasked();
+
+    // extract boat-labeled pixels and perform erosion/dilation
+    cv::Mat boatsSegments = getBoatsMaskErodedDilated(segmentationResult);
+    // compute bounding boxes on the result
     smasked.binaryToBBoxes(boatsSegments, estBboxes, true);
+    // filter bboxes with area <= 2% of the mean area
+    filterBoundingBoxesByArea(estBboxes, 0.02);
+    // precompute target bboxes masks
+    auto targetBBoxesMasks = masksForBoxes(trueBboxes, image.size());
+    // precompute estimated bboxes
+    auto estBBoxesMasks = masksForBoxes(estBboxes, image.size());
 
-    cv::Mat bboxes_img = image.clone();
-    for(auto& box: estBboxes) {
-        cv::rectangle(bboxes_img, box, cv::Scalar(0,255,0),3);
+    for(const auto& estBBoxMask: estBBoxesMasks){
+        if(targetBBoxesMasks.size() == 0){
+            std::cout<<"Warning, there are more estimated bboxes than real ones"<<std::endl;
+            break;
+        }
+        int intersectionArea = cv::countNonZero(targetBBoxesMasks[0].mul(estBBoxMask));
+        size_t best_index = 0;
+        for(size_t i = 1; i < targetBBoxesMasks.size(); i++){
+            int tempIntArea = cv::countNonZero(targetBBoxesMasks[i].mul(estBBoxMask));
+            if(tempIntArea > intersectionArea){
+                intersectionArea = tempIntArea;
+                best_index = i;
+            }
+        }
+        
+        int unionArea = cv::countNonZero(targetBBoxesMasks[best_index] + estBBoxMask);
+        double iou = (double)intersectionArea/(double)unionArea;
+        ious.push_back(iou);
+        targetBBoxesMasks.erase(targetBBoxesMasks.begin() + best_index);
     }
 
-    cv::imshow("bboxes", bboxes_img);
-    cv::waitKey(0);
+    // display bounding boxes
+    if(showBoxes){
+        cv::Mat bboxes_img = image.clone();
+        for(auto& box: trueBboxes) {
+            cv::rectangle(bboxes_img, box, cv::Scalar(255,0,0),3);
+        }
+        for(auto& box: estBboxes) {
+            cv::rectangle(bboxes_img, box, cv::Scalar(0,255,0),2);
+        }
+        cv::imshow("bboxes", bboxes_img);
+    }
+
     return ious;
+}
+
+double SegmentationInfo::computePixelAccuracy(){
+    cv::Mat chs[3];
+    cv::split(segmentationResult,chs);
+    cv::Mat seaSegments = chs[SEA_CH_INDEX].clone();
+    cv::Mat otherSegments = chs[BOATS_CH_INDEX].clone() + chs[BG_CH_INDEX].clone();
+    cv::Mat correctSeaPixels = seaSegments.mul(seaMask);
+    cv::Mat correctOtherPixels = otherSegments.mul(bgMask + boatsMask);
+    int correctPixels = cv::countNonZero(correctSeaPixels) + cv::countNonZero(correctOtherPixels);
+    int totalPixels = image.rows * image.cols;
+    return (double) correctPixels / (double) totalPixels;
+}
+
+cv::String& SegmentationInfo::getName(){
+    return imageName;
 }

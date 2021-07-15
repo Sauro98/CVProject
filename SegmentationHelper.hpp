@@ -10,6 +10,10 @@
 #define SEA_LABEL 2
 #define BG_LABEL 3
 
+#define BG_CH_INDEX 0 // blue channel
+#define BOATS_CH_INDEX 1 // green channel
+#define SEA_CH_INDEX 2 // red channel
+
 #include <iostream>
 #include <fstream>
 #include "SiftMasked.h"
@@ -22,15 +26,18 @@ void removeMasksFromImagesFnames(std::vector<cv::String>& fnames);
 
 class SegmentationInfo {
     public:
-        SegmentationInfo(cv::Mat image, cv::Mat seaMask, cv::Mat boatsMask, cv::Mat bgMask, std::vector<cv::Rect> bboxes): image(image), seaMask(seaMask), boatsMask(boatsMask), bgMask(bgMask), trueBboxes(bboxes) {
+        SegmentationInfo(cv::Mat image, cv::Mat seaMask, cv::Mat boatsMask, cv::Mat bgMask, std::vector<cv::Rect> bboxes, cv::String imageName): image(image), seaMask(seaMask), boatsMask(boatsMask), bgMask(bgMask), trueBboxes(bboxes), imageName(imageName) {
             estBboxes = std::vector<cv::Rect>();
         };
         void computKeypoints(bool sharpen);
         void showLabeledKps();
         void performSegmentation(bool showResults);
-        std::vector<double> computeIOU();
+        std::vector<double> computeIOU(bool showBoxes);
+        double computePixelAccuracy();
+        cv::String& getName();
 
     private: 
+        cv::String imageName;
         std::vector<cv::Rect> trueBboxes, estBboxes;
         cv::Mat image, seaMask, boatsMask, bgMask;
         cv::Mat boatDescriptors, seaDescriptors, bgDescriptors;
