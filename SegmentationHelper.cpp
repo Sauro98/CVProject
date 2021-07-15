@@ -30,8 +30,9 @@ SegmentationHelper::SegmentationHelper(cv::String& inputDirectory, cv::String& i
     std::sort(filenames.begin(), filenames.end());
     std::sort(bboxes_fnames.begin(), bboxes_fnames.end());
     std::sort(masks_fnames.begin(), masks_fnames.end());
+    std::sort(boat_masks_fnames.begin(), boat_masks_fnames.end());
 
-    if (filenames.size() != bboxes_fnames.size() || filenames.size() != masks_fnames.size()){
+    if (filenames.size() != bboxes_fnames.size() || filenames.size() != masks_fnames.size() || filenames.size() != boat_masks_fnames.size()){
         std::cout<<"Some masks/bboxes are missing"<<std::endl;
         exit(1);
     }
@@ -70,14 +71,49 @@ std::vector<SegmentationInfo> SegmentationHelper::loadInfos(bool boatsFromBBoxes
     return infos;
 }
 
-void SegmentationInfo::computeKeypoints(bool sharpen){
+void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify){
     SiftMasked smasked = SiftMasked();
     BlackWhite_He equalizer = BlackWhite_He();
     cv::Mat eq_img = equalizer.bgr_to_gray_HE(image, sharpen);
-
-    boatKps = smasked.findFeatures(eq_img, boatsMask, boatDescriptors);
-    seaKps = smasked.findFeatures(eq_img, seaMask, seaDescriptors);
-    bgKps = smasked.findFeatures(eq_img, bgMask, bgDescriptors);
+    
+    if(classify)
+    {
+        cv::Mat allDescriptors;
+        std::vector<cv::KeyPoint> allKP = smasked.findFeatures(eq_img, cv::Mat(), allDescriptors);
+        std::vector<std::vector<double>> descVect;
+        appendDescriptors(descVect, allDescriptors, 0, false);
+        
+        boatKps.clear();
+        seaKps.clear();
+        bgKps.clear();
+        
+        for(unsigned int i=0; i<allKP.size(); ++i)
+        {
+            const unsigned int classID = classify(descVect[i]);
+            if (classID == BOAT_LABEL)
+            {
+                boatKps.push_back(allKP[i]);
+            }
+            else if (classID == SEA_LABEL)
+            {
+                seaKps.push_back(allKP[i]);
+            }
+            else
+            {
+                bgKps.push_back(allKP[i]);
+            }
+            
+            smasked.findDescriptors(eq_img, boatKps, boatDescriptors);
+            smasked.findDescriptors(eq_img, seaKps, seaDescriptors);
+            smasked.findDescriptors(eq_img, bgKps, bgDescriptors);
+        }
+    }
+    else
+    {
+        boatKps = smasked.findFeatures(eq_img, boatsMask, boatDescriptors);
+        seaKps = smasked.findFeatures(eq_img, seaMask, seaDescriptors);
+        bgKps = smasked.findFeatures(eq_img, bgMask, bgDescriptors);
+    }
 }
 
 void SegmentationInfo::showLabeledKps(){
