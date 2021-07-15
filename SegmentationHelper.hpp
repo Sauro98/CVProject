@@ -36,7 +36,7 @@ class SegmentationInfo {
         SegmentationInfo(cv::Mat image, cv::Mat seaMask, cv::Mat boatsMask, cv::Mat bgMask, std::vector<cv::Rect> bboxes, cv::String imageName): image(image), seaMask(seaMask), boatsMask(boatsMask), bgMask(bgMask), trueBboxes(bboxes), imageName(imageName) {
             estBboxes = std::vector<cv::Rect>();
         };
-        void computKeypoints(bool sharpen);
+        void computeKeypoints(bool sharpen);
         void showLabeledKps();
         void performSegmentation(bool showResults);
         std::vector<double> computeIOU(bool showBoxes);

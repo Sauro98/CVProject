@@ -70,11 +70,11 @@ std::vector<SegmentationInfo> SegmentationHelper::loadInfos(bool boatsFromBBoxes
     return infos;
 }
 
-void SegmentationInfo::computKeypoints(bool sharpen){
+void SegmentationInfo::computeKeypoints(bool sharpen){
     SiftMasked smasked = SiftMasked();
     BlackWhite_He equalizer = BlackWhite_He();
-
     cv::Mat eq_img = equalizer.bgr_to_gray_HE(image, sharpen);
+
     boatKps = smasked.findFeatures(eq_img, boatsMask, boatDescriptors);
     seaKps = smasked.findFeatures(eq_img, seaMask, seaDescriptors);
     bgKps = smasked.findFeatures(eq_img, bgMask, bgDescriptors);

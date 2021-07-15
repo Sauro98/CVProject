@@ -45,7 +45,7 @@ void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages
         if(!detailed){
             std::cout<<"Image ("<<i+1<<"/"<<infos.size()<<")"<<std::endl;
         }
-        imageInfo.computKeypoints(true);
+        imageInfo.computeKeypoints(true);
         if(displayImages){
             imageInfo.showLabeledKps();
         }
