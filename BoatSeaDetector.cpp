@@ -5,6 +5,7 @@
 #include "Utils.hpp"
 #include <opencv2/core/utils/filesystem.hpp>
 #include "SegmentationHelper.hpp"
+#include "DatasetHelper.hpp"
 
 double vectorAvg(std::vector<double>& v);
 void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages, bool detailed);
@@ -16,8 +17,23 @@ int main(int argc, char** argv)
 
     SegmentationHelper sHelper = SegmentationHelper(input_directory, images_ext);
     auto segmentationInfos = sHelper.loadInfos(false);
-
     computeShowMetrics(segmentationInfos,false, false);
+    std::vector<std::vector<double>> descriptors;
+    for(const auto& info: segmentationInfos){
+        info.appendBgDescriptors(descriptors);
+        info.appendBoatsDescriptors(descriptors);
+        info.appendSeaDescriptors(descriptors);
+    }
+    std::cout<<std::endl;
+    std::cout<<"saving whole dataset..."<<std::endl;
+    saveDataset(input_directory + "dataset.txt", descriptors);
+
+    descriptors.erase(descriptors.begin(), descriptors.end());
+
+    std::vector<std::vector<double>> inputs, vInputs, tInputs;
+    std::vector<uint> outputs, vOutputs, tOutputs;
+    std::cout<<"loading whole dataset ..."<<std::endl;
+    loadDataset(input_directory + "dataset.txt", inputs, outputs, vInputs, vOutputs, tInputs, tOutputs, 100, 100, 100);
 }
 
 void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages, bool detailed){

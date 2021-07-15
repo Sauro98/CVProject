@@ -13,12 +13,19 @@ void removeMasksFromImagesFnames(std::vector<cv::String>& fnames){
     }), fnames.end());
 }
 
+void removeDatasetsFromBBoxesFnames(std::vector<cv::String>& fnames){
+    fnames.erase(std::remove_if(fnames.begin(), fnames.end(), [](const cv::String& f) {
+        return f.find(cv::String(DATASET_TOKEN)) != cv::String::npos;
+    }), fnames.end());
+}
+
 SegmentationHelper::SegmentationHelper(cv::String& inputDirectory, cv::String& imagesExt){
     cv::utils::fs::glob(inputDirectory, cv::String(imagesExt), filenames);
     cv::utils::fs::glob(inputDirectory, cv::String(BBOX_EXT), bboxes_fnames);
     cv::utils::fs::glob(inputDirectory, cv::String(SEA_MASK_EXT), masks_fnames);
     cv::utils::fs::glob(inputDirectory, cv::String(BOAT_MASK_EXT), boat_masks_fnames);
     removeMasksFromImagesFnames(filenames);
+    removeDatasetsFromBBoxesFnames(bboxes_fnames);
 
     std::sort(filenames.begin(), filenames.end());
     std::sort(bboxes_fnames.begin(), bboxes_fnames.end());
@@ -218,6 +225,16 @@ double SegmentationInfo::computePixelAccuracy(){
     int correctPixels = cv::countNonZero(correctSeaPixels) + cv::countNonZero(correctOtherPixels);
     int totalPixels = image.rows * image.cols;
     return (double) correctPixels / (double) totalPixels;
+}
+
+void SegmentationInfo::appendBoatsDescriptors(std::vector<std::vector<double>>& vect) const {
+    appendDescriptors(vect, boatDescriptors, BOATS_1H_ENC);
+}
+void SegmentationInfo::appendSeaDescriptors(std::vector<std::vector<double>>& vect) const {
+    appendDescriptors(vect, seaDescriptors, SEA_1H_ENC);
+}
+void SegmentationInfo::appendBgDescriptors(std::vector<std::vector<double>>& vect) const {
+    appendDescriptors(vect, bgDescriptors, BG_1H_ENC);
 }
 
 cv::String& SegmentationInfo::getName(){
