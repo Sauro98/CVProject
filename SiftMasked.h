@@ -1,4 +1,7 @@
 
+#ifndef SIFT_MASKED_H
+#define SIFT_MASKED_H
+
 #include <iostream>
 #include <fstream>
 #include <opencv2/features2d.hpp>
@@ -38,7 +41,7 @@ public:
             
             while (my_file >> x >> y >> width >> height) {
 
-                cout << x << " " << y << " " << width << " " << height << endl;
+                //cout << x << " " << y << " " << width << " " << height << endl;
 
                 out_rects.push_back(cv::Rect(x, y, width, height));
             }
@@ -49,11 +52,13 @@ public:
     }
 
     //if we have a binary image we detect the contours and create the zone of interest with a bounding box
-    void binaryToBBoxes(const cv::Mat &img, std::vector<cv::Rect> &out) {
+    void binaryToBBoxes(const cv::Mat &img, std::vector<cv::Rect> &out, bool ignore_internal) {
         vector<vector<Point>> contours;
         vector<Vec4i> hierarchy;
-
-        findContours(img, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
+        if(ignore_internal)
+            findContours(img, contours, hierarchy, cv::RETR_EXTERNAL, cv::CHAIN_APPROX_SIMPLE);
+        else
+            findContours(img, contours, hierarchy, cv::RETR_CCOMP, cv::CHAIN_APPROX_SIMPLE);
 
         for (const auto &cnt: contours) {
             out.push_back(boundingRect(cnt));
@@ -61,7 +66,7 @@ public:
     }
 
     //draw a binary mask based on rects
-    Mat findBinMask(Mat img, vector<Rect> rects)
+    Mat findBinMask(Mat img, vector<Rect>& rects)
     {
         Mat col = Mat::zeros(Size(img.cols, img.rows), CV_8UC1);
 
@@ -86,3 +91,4 @@ public:
 
 };
 
+#endif

@@ -1,12 +1,16 @@
 //
 // Created by Anna Zuccante on 20/06/2021.
 //
+
+#ifndef BLACK_WHITE_HE_H
+#define BLACK_WHITE_HE_H
+
 #include <iostream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core/utils/filesystem.hpp>
-#include "Utils.cpp"
+#include "Utils.hpp"
 
 
 
@@ -73,6 +77,8 @@ class BlackWhite_He{
         };
 
 };
+
+#endif
 
 
 

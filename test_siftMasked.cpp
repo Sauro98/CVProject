@@ -30,7 +30,7 @@ int main(int argc, char** argv)
     waitKey(0);
 
     if(!argv[2]){
-        featImg.binaryToBBoxes(img,rects);
+        featImg.binaryToBBoxes(img,rects, false);
     }
 
     else{
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
     imshow("Mask", col);
     waitKey(0);
 
-    keypoints = featImg.findFeatures(img, col,descriptor, res_img);
+    keypoints = featImg.findFeatures(img, col,descriptor);
     drawKeypoints(img, keypoints, res_img);
     imshow("Keypoint image", res_img);
     waitKey(0);

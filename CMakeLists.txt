@@ -8,7 +8,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED True)
 
-add_executable(WaterSelector WaterSelector.cpp Utils.cpp)
+add_executable(WaterSelector WaterSelector.cpp Utils.cpp DatasetHelper.cpp SegmentationHelper.cpp)
 target_link_libraries(WaterSelector ${OpenCV_LIBS})
 target_link_libraries(WaterSelector stdc++)
 
@@ -16,7 +16,7 @@ add_executable(BBoxSelector BBoxSelector.cpp Utils.cpp)
 target_link_libraries(BBoxSelector ${OpenCV_LIBS})
 target_link_libraries(BBoxSelector stdc++)
 
-add_executable(bw_he BlackWhite_He.cpp)
+add_executable(bw_he BlackWhite_He.cpp Utils.cpp)
 target_link_libraries(bw_he ${OpenCV_LIBS})
 target_link_libraries(bw_he stdc++)
 
@@ -25,8 +25,12 @@ target_link_libraries(BuildDataset ${OpenCV_LIBS})
 target_link_libraries(BuildDataset stdc++)
 
 add_executable(DecisionTree DecisionTree_class_and_test.cpp)
+target_link_libraries(DecisionTree stdc++)
 
 add_executable(test_siftmasked test_siftMasked.cpp)
 target_link_libraries(test_siftmasked ${OpenCV_LIBS})
 target_link_libraries(test_siftmasked stdc++)
 
+add_executable(bseadetector BoatSeaDetector.cpp Utils.cpp DatasetHelper.cpp SegmentationHelper.cpp)
+target_link_libraries(bseadetector ${OpenCV_LIBS})
+target_link_libraries(bseadetector stdc++)
