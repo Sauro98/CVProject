@@ -51,6 +51,7 @@ void findAllKeypoints(cv::Mat& img, std::vector<cv::KeyPoint>& keypoints, bool s
 void createMask(cv::Mat& img, std::vector<cv::KeyPoint>& background, std::vector<cv::KeyPoint>& foreground, cv::Mat& mask);
 void showMask(cv::String name, cv::Mat& img, cv::Mat& mask, bool boat);
 void saveMask(cv::String baseName, cv::Mat& mask, bool boat);
-void sharpen(cv::Mat& input, cv::Mat& output);
+void sharpen(cv::Mat& input, cv::Mat& output, int laplacianWeight = 1);
+double median(cv::Mat& img);
 
 #endif // __UTILS_HPP_INCLUDED__

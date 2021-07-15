@@ -23,14 +23,14 @@ class BlackWhite_He{
 
         //converting an image to BGR to GRAYScale and doing the histogram equalization of it; if the bool
         //parameter is true than also a sharpening of the image is performed.
-        Mat bgr_to_gray_HE(Mat image, bool shouldSharpen){
+        Mat bgr_to_gray_HE(Mat image, bool shouldSharpen, int laplacianWeigth = 1){
 
             Mat gray_img, grayhist_equal;
             cvtColor(image,gray_img,COLOR_BGR2GRAY);
             equalizeHist(gray_img, grayhist_equal); 
             if(shouldSharpen)
                 {
-                    sharpen(grayhist_equal, grayhist_equal);
+                    sharpen(grayhist_equal, grayhist_equal, laplacianWeigth);
                 }
             return grayhist_equal;
         };

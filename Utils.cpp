@@ -85,7 +85,7 @@ void bgr_to_gray_HE(cv::Mat& image, cv::Mat& out)
 	cv::equalizeHist(gray_img, out);
 };
 
-void sharpen(cv::Mat& input, cv::Mat& output)
+void sharpen(cv::Mat& input, cv::Mat& output, int laplacianWeight)
 {
 	// by Ivano
     cv::Mat imgLaplacian;
@@ -93,7 +93,7 @@ void sharpen(cv::Mat& input, cv::Mat& output)
     cv::GaussianBlur(input, output, cv::Size(5,5),0);
     cv::Laplacian(output, imgLaplacian, CV_32F);
     output.convertTo(output, CV_32F);
-    output = output - imgLaplacian;
+    output = output - laplacianWeight * imgLaplacian;
     // convert back to 8bits gray scale
     output.convertTo(output, CV_8U);
 }
