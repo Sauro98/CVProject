@@ -26,14 +26,14 @@ int main(int argc, char** argv)
     }
     std::cout<<std::endl;
     std::cout<<"saving whole dataset..."<<std::endl;
-    saveDataset(input_directory + "dataset.txt", descriptors);
+    saveDataset(input_directory + "kp_dataset.txt", descriptors);
 
     descriptors.erase(descriptors.begin(), descriptors.end());
 
     std::vector<std::vector<double>> inputs, vInputs, tInputs;
     std::vector<uint> outputs, vOutputs, tOutputs;
     std::cout<<"loading whole dataset ..."<<std::endl;
-    loadDataset(input_directory + "dataset.txt", inputs, outputs, vInputs, vOutputs, tInputs, tOutputs, 100, 100, 100);
+    loadDataset(input_directory + "kp_dataset.txt", inputs, outputs, vInputs, vOutputs, tInputs, tOutputs, 100, 100, 100);
 }
 
 void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages, bool detailed){
