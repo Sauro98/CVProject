@@ -36,7 +36,7 @@ void saveDataset(
 	output.close();
 }
 
-void appendDescriptors(std::vector<std::vector<double>>& vect, const cv::Mat& descriptors, char oneHotEnc){
+void appendDescriptors(std::vector<std::vector<double>>& vect, const cv::Mat& descriptors, char oneHotEnc, bool addEnc){
     std::vector<double> line;
 	for(unsigned int r=0; r<descriptors.rows; ++r)
 	{
@@ -46,17 +46,19 @@ void appendDescriptors(std::vector<std::vector<double>>& vect, const cv::Mat& de
 			line.push_back(descriptors.at<float>(r,c));
 		}
 
-        int ch1 = ((oneHotEnc >> 2) & 0x01);
-        int ch2 = ((oneHotEnc >> 1) & 0x01);
-        int ch3 = ((oneHotEnc) & 0x01);
-        
-        // the first three digits of the one hot encoding
-        line.push_back((double) ch1);
-        line.push_back((double) ch2);
-        line.push_back((double) ch3);
-
-		vect.push_back(line);
-	}
+        if(addEnc)
+        {
+            int ch1 = ((oneHotEnc >> 2) & 0x01);
+            int ch2 = ((oneHotEnc >> 1) & 0x01);
+            int ch3 = ((oneHotEnc) & 0x01);
+            
+            // the first three digits of the one hot encoding
+            line.push_back((double) ch1);
+            line.push_back((double) ch2);
+            line.push_back((double) ch3);
+        }
+        vect.push_back(line);
+    }
 }
 
 void loadDataset(
