@@ -22,7 +22,7 @@ void saveDataset(
 					std::vector<std::vector<double>>& descriptors
 				);
 
-void appendDescriptors(std::vector<std::vector<double>>& vect, const cv::Mat& descriptors, char oneHotEnc);
+void appendDescriptors(std::vector<std::vector<double>>& vect, const cv::Mat& descriptors, char oneHotEnc, bool addEnc = true);
 
 void loadDataset(
 					const std::string& name,

@@ -5,7 +5,7 @@
 #define SEA_MASK_EXT "*_mask.png"
 #define BOAT_MASK_EXT "*_maskb.png"
 #define MASK_TOKEN "_mask"
-#define DATASET_TOKEN "dataset"
+#define DATASET_TOKEN "kp_dataset"
 
 // target values defined in DatasetHelper.hpp
 #define BOAT_LABEL BOAT_TARGET
@@ -27,6 +27,8 @@
 #include "DatasetHelper.hpp"
 #include <opencv2/core/utils/filesystem.hpp>
 
+typedef unsigned int (*classFunc)(std::vector<double>&);
+
 void drawMarkers(cv::Mat& markers, std::vector<cv::KeyPoint> kps, cv::Scalar color);
 void removeMasksFromImagesFnames(std::vector<cv::String>& fnames);
 void removeDatasetsFromBBoxesFnames(std::vector<cv::String>& fnames);
@@ -36,7 +38,7 @@ class SegmentationInfo {
         SegmentationInfo(cv::Mat image, cv::Mat seaMask, cv::Mat boatsMask, cv::Mat bgMask, std::vector<cv::Rect> bboxes, cv::String imageName): image(image), seaMask(seaMask), boatsMask(boatsMask), bgMask(bgMask), trueBboxes(bboxes), imageName(imageName) {
             estBboxes = std::vector<cv::Rect>();
         };
-        void computeKeypoints(bool sharpen);
+        void computeKeypoints(bool sharpen, classFunc classify = nullptr);
         void showLabeledKps();
         void performSegmentation(bool showResults);
         std::vector<double> computeIOU(bool showBoxes);
