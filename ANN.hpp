@@ -52,6 +52,7 @@ public:
   * \param iterations max number of iterations.
   * \param minErrorEpochs number of epochs between subsequent validation error test.
   * \param patience patience for early stopping. -1 disables early stopping.
+  * \param filename base filename for saving at each iteration. Default: don't save.
   * \param useCategorical use categorical error instead of MSE.
   * \param verbose verbosity.
   * \param N Learning rate.
@@ -59,7 +60,8 @@ public:
   * \return number of iterations performed. */
 	unsigned int train(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs,
 					   const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
-					   double minError = 0.01, unsigned int iterations = 1000, unsigned int minErrorEpochs = 10, int patience = -1,
+					   double minError = 0.01, unsigned int iterations = 1000, unsigned int minErrorEpochs = 10,
+					   int patience = -1, std::string filename = "",
 					   bool useCategorical = false, bool verbose = true,
 					   double N = 0.3, double B = 0.1);
 
