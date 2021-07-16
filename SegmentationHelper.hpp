@@ -27,7 +27,7 @@
 #include "DatasetHelper.hpp"
 #include <opencv2/core/utils/filesystem.hpp>
 
-typedef unsigned int (*classFunc)(std::vector<double>&);
+typedef unsigned int (*classFunc)(std::vector<double>&, void*);
 
 void drawMarkers(cv::Mat& markers, std::vector<cv::KeyPoint> kps, cv::Scalar color);
 void removeMasksFromImagesFnames(std::vector<cv::String>& fnames);
