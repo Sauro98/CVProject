@@ -46,3 +46,6 @@ archive
 
 k_m_t.cpp
 test.cpp
+
+# unzipped folders
+train-set/
