@@ -195,7 +195,7 @@ void Ann::show()
 
 unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs,
 						const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
-						double minError, unsigned int iterations, unsigned int minErrorEpochs, int patience,
+						double minError, unsigned int iterations, unsigned int minErrorEpochs, int patience, std::string filename,
 						bool useCategorical, bool verbose,
 						double N, double B)
 {
@@ -266,6 +266,10 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 			}
 		}
 		
+		if(filename!="")
+		{
+			save(filename+std::to_string(mainIt));
+		}
 		if(mainIt%minErrorEpochs==0)
 		{
 			double error(0);
