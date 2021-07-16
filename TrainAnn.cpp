@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 	std::vector<unsigned int> topology;
 	topology.push_back(128);
 	topology.push_back(80);
-	topology.push_back(2);
+	topology.push_back(3);
 	Ann ann = Ann(topology);
 	ann.randomize(0);
 	
