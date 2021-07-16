@@ -134,7 +134,7 @@ int main(int argc, char** argv)
 	//tInputs,tOutputs,
 	
 	tInputs,tOutputs,
-	0.001, 10, 1, -1, true, true, 0.3, 0.1);
+	0.001, 10, 1, -1, "../ann/ann", true, true, 0.3, 0.1);
 	
 	ann.save("../ann");
 	
