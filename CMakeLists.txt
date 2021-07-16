@@ -34,3 +34,7 @@ target_link_libraries(test_siftmasked stdc++)
 add_executable(bseadetector BoatSeaDetector.cpp Utils.cpp DatasetHelper.cpp SegmentationHelper.cpp)
 target_link_libraries(bseadetector ${OpenCV_LIBS})
 target_link_libraries(bseadetector stdc++)
+
+add_executable(TrainAnn TrainAnn.cpp ANN.cpp Utils.cpp DatasetHelper.cpp SegmentationHelper.cpp)
+target_link_libraries(TrainAnn ${OpenCV_LIBS})
+target_link_libraries(TrainAnn stdc++)
