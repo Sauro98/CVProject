@@ -71,7 +71,7 @@ std::vector<SegmentationInfo> SegmentationHelper::loadInfos(bool boatsFromBBoxes
     return infos;
 }
 
-void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* usrData){
+void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify){
     SiftMasked smasked = SiftMasked();
     BlackWhite_He equalizer = BlackWhite_He();
     cv::Mat eq_img = equalizer.bgr_to_gray_HE(image, sharpen);
@@ -89,7 +89,7 @@ void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* 
         
         for(unsigned int i=0; i<allKP.size(); ++i)
         {
-            const unsigned int classID = classify(descVect[i], usrData);
+            const unsigned int classID = classify(descVect[i]);
             if (classID == BOAT_LABEL)
             {
                 boatKps.push_back(allKP[i]);
@@ -102,10 +102,11 @@ void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* 
             {
                 bgKps.push_back(allKP[i]);
             }
+            
+            smasked.findDescriptors(eq_img, boatKps, boatDescriptors);
+            smasked.findDescriptors(eq_img, seaKps, seaDescriptors);
+            smasked.findDescriptors(eq_img, bgKps, bgDescriptors);
         }
-        smasked.findDescriptors(eq_img, boatKps, boatDescriptors);
-        smasked.findDescriptors(eq_img, seaKps, seaDescriptors);
-        smasked.findDescriptors(eq_img, bgKps, bgDescriptors);
     }
     else
     {
