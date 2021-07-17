@@ -9,7 +9,7 @@
 #include "kMeansClassifier.hpp"
 
 double vectorAvg(std::vector<double>& v);
-void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages, bool detailed, KMeansClassifier* classifier);
+void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages, bool detailed/*, KMeansClassifier* classifier*/);
 
 unsigned int kmeansCallback(std::vector<double>& input, void* usrData)
 {
@@ -23,7 +23,7 @@ int main(int argc, char** argv)
     cv::String input_directory = cv::String(argv[1]);
     cv::String images_ext = cv::String(argv[2]);
 
-    /*SegmentationHelper sHelper = SegmentationHelper(input_directory, images_ext);
+    SegmentationHelper sHelper = SegmentationHelper(input_directory, images_ext);
     auto segmentationInfos = sHelper.loadInfos(false);
     computeShowMetrics(segmentationInfos,false, false);
     std::vector<std::vector<double>> boatsDescriptors;
@@ -38,31 +38,31 @@ int main(int argc, char** argv)
     std::cout<<"saving whole dataset..."<<std::endl;
     saveDataset(input_directory + "_bg_kp_dataset.txt", bgDescriptors);
     saveDataset(input_directory + "_boats_kp_dataset.txt", boatsDescriptors);
-    saveDataset(input_directory + "_sea_kp_dataset.txt", seaDescriptors);*/
+    saveDataset(input_directory + "_sea_kp_dataset.txt", seaDescriptors);
 
     //descriptors.erase(descriptors.begin(), descriptors.end());
 
-    
     /*
+    
     std::vector<std::vector<double>> seaInputs,boatsInputs, bgInputs, vInputs, tInputs;
     std::vector<uint> seaOutputs,boatsOutputs, bgOutputs, vOutputs, tOutputs;
     std::cout<<"loading bg dataset ..."<<std::endl;
-    loadDataset(input_directory + "_bg_kp_dataset.txt", bgInputs, bgOutputs, vInputs, vOutputs, tInputs, tOutputs, 101343, 0, 0);
+    loadDataset(input_directory + "_bg_kp_dataset.txt", bgInputs, bgOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000, 0, 0);
     std::cout<<"loading boats dataset ..."<<std::endl;
-    loadDataset(input_directory + "_boats_kp_dataset.txt", boatsInputs, boatsOutputs, vInputs, vOutputs, tInputs, tOutputs, 36231, 0, 0);
+    loadDataset(input_directory + "_boats_kp_dataset.txt", boatsInputs, boatsOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000, 0, 0);
     std::cout<<"loading sea dataset ..."<<std::endl;
-    loadDataset(input_directory + "_sea_kp_dataset.txt", seaInputs, seaOutputs, vInputs, vOutputs, tInputs, tOutputs, 124934, 0, 0);
-    */
+    loadDataset(input_directory + "_sea_kp_dataset.txt", seaInputs, seaOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000, 0, 0);
+    
     
 
     KMeansClassifier classifier(300.);
     
-    /*
+    
     classifier.clusterSeaKps(seaInputs,10000, true);
     classifier.clusterboatsKps(boatsInputs, 5000, true);
     classifier.clusterbgKps(bgInputs, 10000, true);
     classifier.save(input_directory);
-    */
+    
     
     classifier.load(input_directory,true);
 
@@ -70,10 +70,10 @@ int main(int argc, char** argv)
     SegmentationHelper sHelper = SegmentationHelper(input_directory, images_ext);
     auto segmentationInfos = sHelper.loadInfos(false);
     computeShowMetrics(segmentationInfos,true, false, &classifier);
-
+*/
 }
 
-void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages, bool detailed, KMeansClassifier* classifier){
+void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages, bool detailed/*, KMeansClassifier* classifier*/){
     std::vector<double> allIous;
     std::vector<double> allPixAcc;
     std::cout<<std::endl;
@@ -82,12 +82,16 @@ void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages
         if(!detailed){
             std::cout<<"Image ("<<i+1<<"/"<<infos.size()<<"): "<<imageInfo.getName()<<std::endl;
         }
-        imageInfo.computeKeypoints(true,kmeansCallback,classifier);
+        std::cout<<"pre compute kp"<<std::endl;
+        imageInfo.computeKeypoints(true/*,kmeansCallback,classifier*/);
         if(displayImages){
             imageInfo.showLabeledKps();
         }
+        std::cout<<"pre segmentation"<<std::endl;
         imageInfo.performSegmentation(displayImages);
+        std::cout<<"pre IOU"<<std::endl;
         auto ious = imageInfo.computeIOU(displayImages);
+        std::cout<<"post IOU"<<std::endl;
         if(detailed){
             std::cout<<imageInfo.getName()<<std::endl;
             for(const auto& iou: ious)

@@ -315,6 +315,7 @@ std::vector<double> SegmentationInfo::computeIOU(bool showBoxes){
             //std::cout<<"Warning, there are more estimated bboxes than real ones"<<std::endl;
             //break;
             ious.push_back(0.);
+            continue;
         }
         int intersectionArea = cv::countNonZero(targetBBoxesMasks[0].mul(estBBoxMask));
         size_t best_index = 0;
