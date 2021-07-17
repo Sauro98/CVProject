@@ -132,10 +132,10 @@ void KMeansClassifier::save(cv::String& inputDirectory){
 void KMeansClassifier::load(cv::String& inputDirectory, bool bg){
     std::vector<std::vector<double>> seaCentroids, boatsCentroids, bgCentroids, vInputs, tInputs;
     std::vector<uint>  vOutputs, tOutputs;
-    loadDataset(inputDirectory + "/kmclassifier/seaCentroids.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, false);
-    loadDataset(inputDirectory + "/kmclassifier/boatsCentroids.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, false);
+    loadDataset(inputDirectory + "/kmclassifier/seaCentroids.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000,0,0, false);
+    loadDataset(inputDirectory + "/kmclassifier/boatsCentroids.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000,0,0, false);
     if(bg){
-        loadDataset(inputDirectory + "/kmclassifier/bgCentroids.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, false);
+        loadDataset(inputDirectory + "/kmclassifier/bgCentroids.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000,0,0, false);
     }/*loadDataset(inputDirectory + "_sea_kp_dataset.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     loadDataset(inputDirectory + "_boats_kp_dataset.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     loadDataset(inputDirectory + "_bg_kp_dataset.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);

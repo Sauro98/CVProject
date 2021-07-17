@@ -132,6 +132,25 @@ struct bin3u
 	unsigned int b3 = 0;
 };
 
+void matErodeDilate3x3(cv::Mat& toClose){
+    uchar erosionComponents[] = {1,1,1,1,1,1,1,1,1};
+    cv::Mat erosionElement = cv::Mat(3,3,CV_8UC1, erosionComponents);
+    cv::dilate(toClose, toClose, erosionElement);
+    cv::erode(toClose, toClose, erosionElement);
+}
+
+void drawGridOnMat(cv::Mat& img, cv::Mat& grid, double deltaX, double deltaY, cv::Scalar color) {
+    for(int r = 0; r < grid.rows; r++){
+        const double y0 = deltaY*r + deltaY/2;
+        for(int c = 0; c < grid.cols; c++){
+            const double x0 = deltaX*c + deltaX/2;
+            if(grid.at<uchar>(r,c) > 0){
+                cv::circle(img, cv::Point2f(x0,y0),1, color, -1, 8, 0 );
+            }
+        }
+    }
+}
+
 void SegmentationInfo::performSegmentation(bool showResults) {
     cv::Mat markersMask = cv::Mat::zeros(image.size(), CV_8U);
 	if(false)
@@ -141,15 +160,12 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 		drawMarkers(markersMask,bgKps, cv::Scalar::all(BG_LABEL));
 	}
 	else
-	{
+	{   
+        cv::Mat denseMarkers = image.clone();
 		unsigned int cels_x = 50;
 		unsigned int cels_y = 50;
-		std::vector<std::vector<bin3u>> bins;
-		for(unsigned int i=0; i<cels_x; ++i)
-		{
-			std::vector<bin3u> tmp(cels_y,bin3u());
-			bins.push_back(tmp);
-		}
+        cv::Mat accumulator = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_32FC3);
+        cv::Mat grid = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_8UC3);
 		double delta_x = image.cols/cels_x;
 		double delta_y = image.rows/cels_y;
 		
@@ -159,7 +175,7 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 			unsigned int y = kp.pt.y/delta_y;
 			x = x<cels_x?x:cels_x-1;
 			y = y<cels_y?y:cels_y-1;
-			bins[x][y].b1 += 1;
+            accumulator.at<cv::Vec3f>(y,x)(0)+= 1.;
 		}
 		for(const auto& kp: seaKps)
 		{
@@ -167,7 +183,7 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 			unsigned int y = kp.pt.y/delta_y;
 			x = x<cels_x?x:cels_x-1;
 			y = y<cels_y?y:cels_y-1;
-			bins[x][y].b2 += 1;
+            accumulator.at<cv::Vec3f>(y,x)(1) += 1.;
 		}
 		for(const auto& kp: bgKps)
 		{
@@ -175,7 +191,7 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 			unsigned int y = kp.pt.y/delta_y;
 			x = x<cels_x?x:cels_x-1;
 			y = y<cels_y?y:cels_y-1;
-			bins[x][y].b3 += 1;
+            accumulator.at<cv::Vec3f>(y,x)(2) += 1.;
 		}
 		
 		for(unsigned int x=0; x<cels_x; ++x)
@@ -184,27 +200,48 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 			for(unsigned int y=0; y<cels_y; ++y)
 			{
 				const double y0 = delta_y*y + delta_y/2;
-				const bin3u bin = bins[x][y];
-				if(bin.b1!=0 or bin.b2!=0 or bin.b3!=0)
+                const cv::Vec3f binValue = accumulator.at<cv::Vec3f>(y,x);
+				if(binValue[0]>=3 or binValue[1]>=3 or binValue[2]>=3)
 				{
-					if(bin.b1>bin.b2 and bin.b1>bin.b3)
-					{
-						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BOAT_LABEL), -1, 8, 0 );
-						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(255,0,0), -1, 8, 0 );
+					if(binValue[0]>binValue[1] and binValue[0]>binValue[2])
+					{   
+                        grid.at<cv::Vec3b>(y,x)(0) = 255;
+						//cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BOAT_LABEL), -1, 8, 0 );
+						//cv::circle( denseMarkers, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
 					}
-					if(bin.b2>bin.b1 and bin.b2>bin.b3)
+					if(binValue[1]>binValue[0] and binValue[1]>binValue[2])
 					{
-						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(SEA_LABEL), -1, 8, 0 );
-						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
+                        grid.at<cv::Vec3b>(y,x)(1) = 255;
+						//cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(SEA_LABEL), -1, 8, 0 );
+						//cv::circle( denseMarkers, cv::Point2f(x0,y0),1, cv::Scalar(0,0,255), -1, 8, 0 );
 					}
-					if(bin.b3>bin.b1 and bin.b3>bin.b2)
+					if(binValue[2]>binValue[0] and binValue[2]>binValue[1])
 					{
-						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BG_LABEL), -1, 8, 0 );
-						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,0,255), -1, 8, 0 );
+                        grid.at<cv::Vec3b>(y,x)(2) = 255;
+						//cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BG_LABEL), -1, 8, 0 );
+						//cv::circle( denseMarkers, cv::Point2f(x0,y0),1, cv::Scalar(255,0,0), -1, 8, 0 );
 					}
 				}
 			}
 		}
+        cv::Mat chs[3];
+        cv::split(grid, chs);
+        matErodeDilate3x3(chs[0]);
+        matErodeDilate3x3(chs[1]);
+        matErodeDilate3x3(chs[2]);
+
+        drawGridOnMat(markersMask, chs[0], delta_x, delta_y, cv::Scalar::all(BOAT_LABEL));
+        drawGridOnMat(markersMask, chs[1], delta_x, delta_y, cv::Scalar::all(SEA_LABEL));
+        drawGridOnMat(markersMask, chs[2], delta_x, delta_y, cv::Scalar::all(BG_LABEL));
+
+        drawGridOnMat(denseMarkers, chs[0], delta_x, delta_y, cv::Scalar(0,255,0));
+        drawGridOnMat(denseMarkers, chs[1], delta_x, delta_y, cv::Scalar(0,0,255));
+        drawGridOnMat(denseMarkers, chs[2], delta_x, delta_y, cv::Scalar(255,0,0));
+
+
+        if(showResults){
+            cv::imshow("dense markers", denseMarkers);
+        }
 	}
     markersMask.convertTo(markersMask, CV_32S);
     cv::Mat sharp;
@@ -252,6 +289,8 @@ void SegmentationInfo::performSegmentation(bool showResults) {
         imshow( "watershed transform", wshed );
     }
 }
+
+
 
 cv::Mat getBoatsMaskErodedDilated(cv::Mat segmentationResult){
     // keep only green (boats) channel
