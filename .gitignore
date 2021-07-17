@@ -46,3 +46,10 @@ archive
 
 k_m_t.cpp
 test.cpp
+
+#
+
+TestSet/
+ann/
+ann.ann
+TrainingSet
