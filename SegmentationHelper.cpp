@@ -130,8 +130,27 @@ void SegmentationInfo::performSegmentation(bool showResults) {
     drawMarkers(markersMask,bgKps, cv::Scalar::all(BG_LABEL));
 
     markersMask.convertTo(markersMask, CV_32S);
-    
-    cv::watershed(image, markersMask);
+    cv::Mat sharp;
+    sharpen(image, sharp, 1);
+    /*
+    BlackWhite_He eql = BlackWhite_He();
+    cv::Mat mask = eql.bgr_to_gray_HE(image, true, 1);
+	cv::blur(mask, mask, cv::Size(3,3));
+	
+	double med = median(mask);
+	double lower = 0.67*med;
+	double upper = 1.33*med;
+	lower = lower<0?0:lower;
+	upper = upper>255?255:upper;
+	cv::Canny(mask, mask, lower, upper);
+	cv::bitwise_not(mask, mask);
+	cv::distanceTransform(mask, mask, cv::DIST_L2, 3);
+	cv::normalize(mask, mask, 0, 1.0, cv::NORM_MINMAX);
+	mask.convertTo(mask, CV_8UC3, 255, 0);
+	cv::subtract(cv::Scalar::all(255),mask,mask);
+    cv::cvtColor(mask,mask,cv::COLOR_GRAY2BGR);*/
+
+    cv::watershed(sharp, markersMask);
 
     Mat wshed(markersMask.size(), CV_8UC3);
 
