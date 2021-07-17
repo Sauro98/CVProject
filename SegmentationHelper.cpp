@@ -123,12 +123,95 @@ void SegmentationInfo::showLabeledKps(){
     cv::imshow("kps", kpImg);
 }
 
+struct bin3u
+{
+	unsigned int b1 = 0;
+	unsigned int b2 = 0;
+	unsigned int b3 = 0;
+};
+
 void SegmentationInfo::performSegmentation(bool showResults) {
     cv::Mat markersMask = cv::Mat::zeros(image.size(), CV_8U);
-    drawMarkers(markersMask,boatKps, cv::Scalar::all(BOAT_LABEL));
-    drawMarkers(markersMask,seaKps, cv::Scalar::all(SEA_LABEL));
-    drawMarkers(markersMask,bgKps, cv::Scalar::all(BG_LABEL));
-
+	if(false)
+	{
+		drawMarkers(markersMask,boatKps, cv::Scalar::all(BOAT_LABEL));
+		drawMarkers(markersMask,seaKps, cv::Scalar::all(SEA_LABEL));
+		drawMarkers(markersMask,bgKps, cv::Scalar::all(BG_LABEL));
+	}
+	else
+	{
+		unsigned int cels_x = 50;
+		unsigned int cels_y = 50;
+		std::vector<std::vector<bin3u>> bins;
+		for(unsigned int i=0; i<cels_x; ++i)
+		{
+			std::vector<bin3u> tmp(cels_y,bin3u());
+			bins.push_back(tmp);
+		}
+		double delta_x = image.cols/cels_x;
+		double delta_y = image.rows/cels_y;
+		
+		for(const auto& kp: boatKps)
+		{
+			unsigned int x = kp.pt.x/delta_x;
+			unsigned int y = kp.pt.y/delta_y;
+			x = x<cels_x?x:cels_x-1;
+			y = y<cels_y?y:cels_y-1;
+			bins[x][y].b1 += 1;
+		}
+		for(const auto& kp: seaKps)
+		{
+			unsigned int x = kp.pt.x/delta_x;
+			unsigned int y = kp.pt.y/delta_y;
+			x = x<cels_x?x:cels_x-1;
+			y = y<cels_y?y:cels_y-1;
+			bins[x][y].b2 += 1;
+		}
+		for(const auto& kp: bgKps)
+		{
+			unsigned int x = kp.pt.x/delta_x;
+			unsigned int y = kp.pt.y/delta_y;
+			x = x<cels_x?x:cels_x-1;
+			y = y<cels_y?y:cels_y-1;
+			bins[x][y].b3 += 1;
+		}
+		
+		for(unsigned int x=0; x<cels_x; ++x)
+		{
+			const double x0 = delta_x*x + delta_x/2;
+			for(unsigned int y=0; y<cels_y; ++y)
+			{
+				const double y0 = delta_y*y + delta_y/2;
+				const bin3u bin = bins[x][y];
+				if(bin.b1!=0 or bin.b2!=0 or bin.b3!=0)
+				{
+					if(bin.b1>bin.b2)
+					{
+						if(bin.b1>bin.b3)
+						{
+							cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BOAT_LABEL), -1, 8, 0 );
+							//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(255,0,0), -1, 8, 0 );
+						}
+						else
+						{
+							cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BG_LABEL), -1, 8, 0 );
+							//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
+						}
+					}
+					else if(bin.b2>bin.b3)
+					{
+						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(SEA_LABEL), -1, 8, 0 );
+						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,0,255), -1, 8, 0 );
+					}
+					else
+					{
+						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BG_LABEL), -1, 8, 0 );
+						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
+					}
+				}
+			}
+		}
+	}
     markersMask.convertTo(markersMask, CV_32S);
     cv::Mat sharp;
     sharpen(image, sharp, 1);
