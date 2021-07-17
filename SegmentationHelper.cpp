@@ -312,8 +312,9 @@ std::vector<double> SegmentationInfo::computeIOU(bool showBoxes){
 
     for(const auto& estBBoxMask: estBBoxesMasks){
         if(targetBBoxesMasks.size() == 0){
-            std::cout<<"Warning, there are more estimated bboxes than real ones"<<std::endl;
-            break;
+            //std::cout<<"Warning, there are more estimated bboxes than real ones"<<std::endl;
+            //break;
+            ious.push_back(0.);
         }
         int intersectionArea = cv::countNonZero(targetBBoxesMasks[0].mul(estBBoxMask));
         size_t best_index = 0;
@@ -324,11 +325,14 @@ std::vector<double> SegmentationInfo::computeIOU(bool showBoxes){
                 best_index = i;
             }
         }
-        
-        int unionArea = cv::countNonZero(targetBBoxesMasks[best_index] + estBBoxMask);
-        double iou = (double)intersectionArea/(double)unionArea;
-        ious.push_back(iou);
-        targetBBoxesMasks.erase(targetBBoxesMasks.begin() + best_index);
+        if(intersectionArea == 0){
+            ious.push_back(0.);
+        } else {
+            int unionArea = cv::countNonZero(targetBBoxesMasks[best_index] + estBBoxMask);
+            double iou = (double)intersectionArea/(double)unionArea;
+            ious.push_back(iou);
+            targetBBoxesMasks.erase(targetBBoxesMasks.begin() + best_index);
+        }
     }
 
     // display bounding boxes

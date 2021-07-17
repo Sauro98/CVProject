@@ -2,6 +2,8 @@
 
 template <class T>
 cv::Mat matFromVecOfVec(std::vector<std::vector<double>>& input, int matType){
+    if(input.size() == 0)
+        return cv::Mat(cv::Size(0,0), matType);
     cv::Mat matVec = cv::Mat(input.size(), input.at(0).size(), matType);
     for(int i=0; i<matVec.rows; ++i)
         for(int j=0; j<matVec.cols; ++j)
@@ -86,7 +88,10 @@ int KMeansClassifier::predictLabel(std::vector<double>& descriptor){
     minBoatDist = closerInMat(boatsCMat, descriptor);
 
     double bestDist = 0;
-    int label = BG_TARGET;
+    int label = 0;
+    if(bgCMat.rows == 0){
+        label = BG_TARGET;
+    }
     if(minSeaDist < minBoatDist){
         bestDist = minSeaDist;
         if(minSeaDist < threshold){
@@ -124,13 +129,14 @@ void KMeansClassifier::save(cv::String& inputDirectory){
     saveDataset(inputDirectory + "/kmclassifier/bgCentroids.txt", bgCentroids);
 }
 
-void KMeansClassifier::load(cv::String& inputDirectory){
+void KMeansClassifier::load(cv::String& inputDirectory, bool bg){
     std::vector<std::vector<double>> seaCentroids, boatsCentroids, bgCentroids, vInputs, tInputs;
     std::vector<uint>  vOutputs, tOutputs;
     loadDataset(inputDirectory + "/kmclassifier/seaCentroids.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, false);
     loadDataset(inputDirectory + "/kmclassifier/boatsCentroids.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, false);
-    loadDataset(inputDirectory + "/kmclassifier/bgCentroids.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, false);
-    /*loadDataset(inputDirectory + "_sea_kp_dataset.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
+    if(bg){
+        loadDataset(inputDirectory + "/kmclassifier/bgCentroids.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, false);
+    }/*loadDataset(inputDirectory + "_sea_kp_dataset.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     loadDataset(inputDirectory + "_boats_kp_dataset.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     loadDataset(inputDirectory + "_bg_kp_dataset.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     */

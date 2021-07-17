@@ -43,7 +43,7 @@ int main(int argc, char** argv)
     //descriptors.erase(descriptors.begin(), descriptors.end());
 
     
-    
+    /*
     std::vector<std::vector<double>> seaInputs,boatsInputs, bgInputs, vInputs, tInputs;
     std::vector<uint> seaOutputs,boatsOutputs, bgOutputs, vOutputs, tOutputs;
     std::cout<<"loading bg dataset ..."<<std::endl;
@@ -52,17 +52,19 @@ int main(int argc, char** argv)
     loadDataset(input_directory + "_boats_kp_dataset.txt", boatsInputs, boatsOutputs, vInputs, vOutputs, tInputs, tOutputs, 36231, 0, 0);
     std::cout<<"loading sea dataset ..."<<std::endl;
     loadDataset(input_directory + "_sea_kp_dataset.txt", seaInputs, seaOutputs, vInputs, vOutputs, tInputs, tOutputs, 124934, 0, 0);
-    
+    */
     
 
-    KMeansClassifier classifier(1000000.);
+    KMeansClassifier classifier(300.);
     
-    classifier.clusterSeaKps(seaInputs,1000, true);
-    classifier.clusterboatsKps(boatsInputs, 500, true);
-    classifier.clusterbgKps(bgInputs, 1000, true);
+    /*
+    classifier.clusterSeaKps(seaInputs,10000, true);
+    classifier.clusterboatsKps(boatsInputs, 5000, true);
+    classifier.clusterbgKps(bgInputs, 10000, true);
     classifier.save(input_directory);
+    */
     
-    classifier.load(input_directory);
+    classifier.load(input_directory,true);
 
 
     SegmentationHelper sHelper = SegmentationHelper(input_directory, images_ext);

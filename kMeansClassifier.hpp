@@ -19,7 +19,7 @@ class KMeansClassifier {
         int predictLabel(std::vector<double>& descriptor);
 
         void save(cv::String& inputDirectory);
-        void load(cv::String& inputDirectory);
+        void load(cv::String& inputDirectory, bool bg = true);
     private:
         double threshold;
         //std::vector<std::vector<double>> seaCentroids;
