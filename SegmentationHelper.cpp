@@ -185,28 +185,20 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 				const bin3u bin = bins[x][y];
 				if(bin.b1!=0 or bin.b2!=0 or bin.b3!=0)
 				{
-					if(bin.b1>bin.b2)
+					if(bin.b1>bin.b2 and bin.b1>bin.b3)
 					{
-						if(bin.b1>bin.b3)
-						{
-							cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BOAT_LABEL), -1, 8, 0 );
-							//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(255,0,0), -1, 8, 0 );
-						}
-						else
-						{
-							cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BG_LABEL), -1, 8, 0 );
-							//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
-						}
+						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BOAT_LABEL), -1, 8, 0 );
+						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(255,0,0), -1, 8, 0 );
 					}
-					else if(bin.b2>bin.b3)
+					if(bin.b2>bin.b1 and bin.b2>bin.b3)
 					{
 						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(SEA_LABEL), -1, 8, 0 );
-						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,0,255), -1, 8, 0 );
+						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
 					}
-					else
+					if(bin.b3>bin.b1 and bin.b3>bin.b2)
 					{
 						cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BG_LABEL), -1, 8, 0 );
-						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
+						//cv::circle( image, cv::Point2f(x0,y0),1, cv::Scalar(0,0,255), -1, 8, 0 );
 					}
 				}
 			}
