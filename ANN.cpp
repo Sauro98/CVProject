@@ -197,7 +197,7 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 						const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
 						double minError, unsigned int iterations, unsigned int minErrorEpochs, int patience, std::string filename,
 						bool useCategorical, bool verbose,
-						double N, double B)
+						double N, double B, std::mutex* mtx, unsigned int threadIndex)
 {
 	std::vector<double> buffer = std::vector<double>(NpL[NpL.size()-1], 0.0);
 	std::vector<std::vector<std::vector<double>>> DpL = std::vector<std::vector<std::vector<double>>>();
@@ -292,13 +292,22 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 				{
 					trainError = getError(inputs,outputs);
 				}
-				std::cout<<"Iteration "<<mainIt<<"; train: ";
-				if(useCategorical) std::cout<<trainError*100<<"%";
-				else std::cout<<trainError;
-				std::cout<<", validation: ";
-				if(useCategorical) std::cout<<error*100<<"%";
-				else std::cout<<error;
-				std::cout<<"\n";
+				
+				if(mtx)
+				{
+					mtx->lock();
+				}
+					std::cout<<"Iteration "<<mainIt<<", thread "<<threadIndex<<"; train: ";
+					if(useCategorical) std::cout<<trainError*100<<"%";
+					else std::cout<<trainError;
+					std::cout<<", validation: ";
+					if(useCategorical) std::cout<<error*100<<"%";
+					else std::cout<<error;
+					std::cout<<std::endl;
+				if(mtx)
+				{
+					mtx->unlock();
+				}
 			}
 			if(error<minError)
 			{
@@ -325,7 +334,15 @@ unsigned int Ann::train(const std::vector<std::vector<double>> &inputs, const st
 	
 	if(verbose)
 	{
-		std::cout<<"\n";
+		if(mtx)
+		{
+			mtx->lock();
+		}
+			std::cout<<std::endl;
+		if(mtx)
+		{
+			mtx->unlock();
+		}
 	}
 	
 	return mainIt;

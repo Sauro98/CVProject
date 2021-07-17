@@ -4,6 +4,9 @@
 #include "SegmentationHelper.hpp"
 #include "DatasetHelper.hpp"
 
+#include <thread>
+#include <mutex>
+
 void categoryToOneHot(const std::vector<unsigned int>& cat, std::vector<std::vector<double>>& out, unsigned int n)
 {
 	for(unsigned int i=0; i<cat.size(); ++i)
@@ -100,11 +103,68 @@ void testSeg(Ann* ann, bool display = false, bool detailed = false)
     computeShowMetrics(segmentationInfos, display, detailed, ann);
 }
 
+void loadAndRun(std::mutex& mtx, unsigned int index, std::vector<unsigned int> topology)
+{
+	Ann ann = Ann(topology);
+	ann.randomize(0);
+	
+	std::vector<std::vector<double>> inputs, tInputs, outputs, tOutputs;
+    std::vector<unsigned int> outCat, tOutCat;
+	
+	mtx.lock();
+    std::cout<<"Loading dataset (thread "<<index<<")..."<<std::endl;
+    loadDataset("TrainingSet.bin", inputs, outCat, inputs, outCat, inputs, outCat, 40000, 0, 0); //647800
+    loadDataset("TestSet.bin", tInputs, tOutCat, tInputs, tOutCat, tInputs, tOutCat, 10, 0, 0); //262506
+	categoryToOneHot(outCat,outputs,3);
+	categoryToOneHot(tOutCat,tOutputs,3);
+	rescaleVectors(inputs);
+	rescaleVectors(tInputs);
+	std::cout<<"Dataset loaded."<<std::endl;
+	std::cout<<inputs.size()<<" training samples, "<<tInputs.size()<<" test samples."<<std::endl;
+	mtx.unlock();
+	
+	double error = ann.getCategoricalError(tInputs,tOutputs)*100;
+	mtx.lock();
+	std::cout<<"Initial categorical (thread "<<index<<"): "<<error<<"%"<<std::endl;
+	mtx.unlock();
+	
+	ann.train(
+	
+	//inputs,outputs,
+	tInputs,tOutputs,
+	
+	tInputs,tOutputs,
+	0.001, 20, 1, -1, "../ann/ann_"+std::to_string(index)+"_", true, true, 0.3, 0.1,
+	&mtx, index);
+}
+
 int main(int argc, char** argv)
+{
+	std::vector<std::thread> threads;
+	std::mutex mtx;
+	
+	std::vector<unsigned int> topology;
+	topology.push_back(128);
+	topology.push_back(120);
+	topology.push_back(3);
+	
+	threads.push_back(std::thread(loadAndRun, std::ref(mtx), 1, topology));
+	
+	topology[1] = 140;
+	threads.push_back(std::thread(loadAndRun, std::ref(mtx), 2, topology));
+	
+	for(unsigned int i=0; i<threads.size(); ++i)
+	{
+		threads[i].join();
+	}
+	return 0;
+}
+
+int foo(int argc, char** argv)
 {
 	std::vector<unsigned int> topology;
 	topology.push_back(128);
-	topology.push_back(80);
+	topology.push_back(100);//80
 	topology.push_back(3);
 	Ann ann = Ann(topology);
 	ann.randomize(0);
@@ -112,8 +172,8 @@ int main(int argc, char** argv)
 	std::vector<std::vector<double>> inputs, tInputs, outputs, tOutputs;
     std::vector<unsigned int> outCat, tOutCat;
     std::cout<<"Loading dataset...\n";
-    loadDataset("TrainingSet.bin", inputs, outCat, inputs, outCat, inputs, outCat, 10000, 0, 0); //647800
-    loadDataset("TestSet.bin", tInputs, tOutCat, tInputs, tOutCat, tInputs, tOutCat, 10000, 0, 0); //262506
+    loadDataset("TrainingSet.bin", inputs, outCat, inputs, outCat, inputs, outCat, 40000, 0, 0); //647800
+    loadDataset("TestSet.bin", tInputs, tOutCat, tInputs, tOutCat, tInputs, tOutCat, 262506, 0, 0); //262506
 	categoryToOneHot(outCat,outputs,3);
 	categoryToOneHot(tOutCat,tOutputs,3);
 	rescaleVectors(inputs);
@@ -130,11 +190,11 @@ int main(int argc, char** argv)
 	std::cout<<"\nTraining....\n\n";
 	ann.train(
 	
-	inputs,outputs,
-	//tInputs,tOutputs,
+	//inputs,outputs,
+	tInputs,tOutputs,
 	
 	tInputs,tOutputs,
-	0.001, 10, 1, -1, "../ann/ann", true, true, 0.3, 0.1);
+	0.001, 20, 1, -1, "../ann/ann_", true, true, 0.3, 0.1);
 	
 	ann.save("../ann");
 	

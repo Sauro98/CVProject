@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <string>
+#include <mutex>
 
 /** \brief Class used for training and using an ANN (Artificial Neural Network). */
 class Ann
@@ -57,13 +58,15 @@ public:
   * \param verbose verbosity.
   * \param N Learning rate.
   * \param B Momentum factor.
+  * \param mtx Optional mutex for "cout"s.
+  * \param threadIndex Optional index for "cout"s.
   * \return number of iterations performed. */
 	unsigned int train(const std::vector<std::vector<double>> &inputs, const std::vector<std::vector<double>> &outputs,
 					   const std::vector<std::vector<double>> &vInputs, const std::vector<std::vector<double>> &vOutputs,
 					   double minError = 0.01, unsigned int iterations = 1000, unsigned int minErrorEpochs = 10,
 					   int patience = -1, std::string filename = "",
 					   bool useCategorical = false, bool verbose = true,
-					   double N = 0.3, double B = 0.1);
+					   double N = 0.3, double B = 0.1, std::mutex* mtx = nullptr, unsigned int threadIndex = 0);
 
 /** \brief Get error. */
 /** Computes the error of the ANN on inputs w.r.t. outputs. */
