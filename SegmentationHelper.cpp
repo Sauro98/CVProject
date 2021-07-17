@@ -86,9 +86,11 @@ void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* 
         boatKps.clear();
         seaKps.clear();
         bgKps.clear();
-        
+        //std::cout<<"#kps "<<allKP.size()<<std::endl;
         for(unsigned int i=0; i<allKP.size(); ++i)
-        {
+        {   
+            //if(i%100 == 0)
+            //    std::cout<<"KP #"<<i<<std::endl;
             const unsigned int classID = classify(descVect[i], usrData);
             if (classID == BOAT_LABEL)
             {
@@ -98,7 +100,7 @@ void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* 
             {
                 seaKps.push_back(allKP[i]);
             }
-            else
+            else if (classID == BG_LABEL)
             {
                 bgKps.push_back(allKP[i]);
             }
@@ -356,14 +358,14 @@ double SegmentationInfo::computePixelAccuracy(){
     return (double) correctPixels / (double) totalPixels;
 }
 
-void SegmentationInfo::appendBoatsDescriptors(std::vector<std::vector<double>>& vect) const {
-    appendDescriptors(vect, boatDescriptors, BOATS_1H_ENC);
+void SegmentationInfo::appendBoatsDescriptors(std::vector<std::vector<double>>& vect, bool addEnc = true) const {
+    appendDescriptors(vect, boatDescriptors, BOATS_1H_ENC, addEnc);
 }
-void SegmentationInfo::appendSeaDescriptors(std::vector<std::vector<double>>& vect) const {
-    appendDescriptors(vect, seaDescriptors, SEA_1H_ENC);
+void SegmentationInfo::appendSeaDescriptors(std::vector<std::vector<double>>& vect, bool addEnc = true) const {
+    appendDescriptors(vect, seaDescriptors, SEA_1H_ENC, addEnc);
 }
-void SegmentationInfo::appendBgDescriptors(std::vector<std::vector<double>>& vect) const {
-    appendDescriptors(vect, bgDescriptors, BG_1H_ENC);
+void SegmentationInfo::appendBgDescriptors(std::vector<std::vector<double>>& vect, bool addEnc = true) const {
+    appendDescriptors(vect, bgDescriptors, BG_1H_ENC, addEnc);
 }
 
 cv::String& SegmentationInfo::getName(){

@@ -44,9 +44,9 @@ class SegmentationInfo {
         std::vector<double> computeIOU(bool showBoxes);
         double computePixelAccuracy();
         cv::String& getName();
-        void appendBoatsDescriptors(std::vector<std::vector<double>>& vect) const;
-        void appendSeaDescriptors(std::vector<std::vector<double>>& vect) const;
-        void appendBgDescriptors(std::vector<std::vector<double>>& vect) const;
+        void appendBoatsDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
+        void appendSeaDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
+        void appendBgDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
 
     private: 
         cv::String imageName;

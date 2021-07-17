@@ -72,7 +72,8 @@ void loadDataset(
 					
 					unsigned int inSize,
 					unsigned int vSize,
-					unsigned int tSize
+					unsigned int tSize,
+					bool includeTargets
 				)
 {
 	std::ifstream input;
@@ -82,24 +83,32 @@ void loadDataset(
 	while(!input.eof() && inputs.size()<inSize)
 	{
 		input.read((char*)&in[0], 128*sizeof(double));
-		input.read((char*)&buffer[0], 3*sizeof(double));
 		inputs.push_back(in);
-		outputs.push_back(targetFromEnc(buffer));
+		if(includeTargets){
+			input.read((char*)&buffer[0], 3*sizeof(double));
+			outputs.push_back(targetFromEnc(buffer));
+		}
 	}
 	while(!input.eof() && vInputs.size()<vSize)
 	{
 		input.read((char*)&in[0], 128*sizeof(double));
-		input.read((char*)&buffer[0], 3*sizeof(double));
 		vInputs.push_back(in);
-		vOutputs.push_back(targetFromEnc(buffer));
+		if(includeTargets){
+			input.read((char*)&buffer[0], 3*sizeof(double));
+			vOutputs.push_back(targetFromEnc(buffer));
+		}
 	}
 	while(!input.eof() && tInputs.size()<tSize)
 	{
 		input.read((char*)&in[0], 128*sizeof(double));
-		input.read((char*)&buffer[0], 3*sizeof(double));
 		tInputs.push_back(in);
-		tOutputs.push_back(targetFromEnc(buffer));
+		if(includeTargets){
+			input.read((char*)&buffer[0], 3*sizeof(double));
+			tOutputs.push_back(targetFromEnc(buffer));
+		}
 	}
+
+	std::cout<<"sz "<<inputs.size()<<std::endl;
 
 	if (vInputs.size() < vSize || tInputs.size() < tSize)
 		std::cout<<"Warning: not enough samples in the data file"<<std::endl;
