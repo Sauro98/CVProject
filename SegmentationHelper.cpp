@@ -1,4 +1,5 @@
 #include "SegmentationHelper.hpp"
+#include <thread>
 
 void drawMarkers(cv::Mat& markers, std::vector<cv::KeyPoint> kps, cv::Scalar color){
     for (int i = 0; i < kps.size(); i++) {
@@ -71,7 +72,17 @@ std::vector<SegmentationInfo> SegmentationHelper::loadInfos(bool boatsFromBBoxes
     return infos;
 }
 
-void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* usrData){
+void classifyKeypoints(std::vector<std::vector<double>>& descVect, std::vector<unsigned int>& IDs, unsigned int index, unsigned int n, classFunc classify, void* usrData)
+{
+	const unsigned int k = descVect.size()/n;
+	const unsigned int maxIt = (index==(n-1))?(descVect.size()):(k*(index+1));
+	for(unsigned int i=k*index; i<maxIt; ++i)
+	{
+		IDs[i] = classify(descVect[i], usrData);
+	}
+}
+
+void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* usrData, unsigned int numThread){
     SiftMasked smasked = SiftMasked();
     BlackWhite_He equalizer = BlackWhite_He();
     cv::Mat eq_img = equalizer.bgr_to_gray_HE(image, sharpen);
@@ -86,12 +97,26 @@ void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* 
         boatKps.clear();
         seaKps.clear();
         bgKps.clear();
+		
+		std::vector<unsigned int> IDs(allKP.size(), 0);
+		std::vector<std::thread> threads;
+		for(unsigned int i=0; i<(numThread-1); ++i)
+		{
+			threads.push_back(std::thread(classifyKeypoints, std::ref(descVect), std::ref(IDs), i, numThread, classify, usrData));
+		}
+		classifyKeypoints(descVect, IDs, (numThread-1), numThread, classify, usrData);
+		
+		for(unsigned int i=0; i<threads.size(); ++i)
+		{
+			threads[i].join();
+		}
+				
         //std::cout<<"#kps "<<allKP.size()<<std::endl;
         for(unsigned int i=0; i<allKP.size(); ++i)
         {   
             //if(i%100 == 0)
             //    std::cout<<"KP #"<<i<<std::endl;
-            const unsigned int classID = classify(descVect[i], usrData);
+            const unsigned int classID = IDs[i];
             if (classID == BOAT_LABEL)
             {
                 boatKps.push_back(allKP[i]);

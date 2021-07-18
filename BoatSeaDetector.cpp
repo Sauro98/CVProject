@@ -90,7 +90,7 @@ void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages
         if(classifier == nullptr)
             imageInfo.computeKeypoints(true);
         else
-            imageInfo.computeKeypoints(true,kmeansCallback,classifier);
+            imageInfo.computeKeypoints(true,kmeansCallback,classifier,8);
 
         if(displayImages){
             imageInfo.showLabeledKps();
