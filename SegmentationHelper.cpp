@@ -78,15 +78,17 @@ void classifyKeypoints(std::vector<std::vector<double>>& descVect, std::vector<u
 	const unsigned int maxIt = (index==(n-1))?(descVect.size()):(k*(index+1));
 	for(unsigned int i=k*index; i<maxIt; ++i)
 	{
+        if ((i - (k * index)) % 100 == 0)
+            std::cout<<""<<i - (k * index) + 1<<" of "<< maxIt - (k*index)<<std::endl; 
 		IDs[i] = classify(descVect[i], usrData);
 	}
 }
 
 void SegmentationInfo::computeKeypoints(bool sharpen, classFunc classify, void* usrData, unsigned int numThread){
     SiftMasked smasked = SiftMasked();
-    BlackWhite_He equalizer = BlackWhite_He();
-    cv::Mat eq_img = equalizer.bgr_to_gray_HE(image, sharpen);
-    
+    //BlackWhite_He equalizer = BlackWhite_He();
+    //cv::Mat eq_img = equalizer.bgr_to_gray_HE(image, sharpen);
+    cv::Mat eq_img = image.clone();
     if(classify)
     {
         cv::Mat allDescriptors;
@@ -157,11 +159,18 @@ struct bin3u
 	unsigned int b3 = 0;
 };
 
-void matErodeDilate3x3(cv::Mat& toClose){
+void matDilateErode3x3(cv::Mat& toClose){
     uchar erosionComponents[] = {1,1,1,1,1,1,1,1,1};
     cv::Mat erosionElement = cv::Mat(3,3,CV_8UC1, erosionComponents);
     cv::dilate(toClose, toClose, erosionElement);
     cv::erode(toClose, toClose, erosionElement);
+}
+
+void matErodeDilate3x3(cv::Mat& toClose){
+    uchar erosionComponents[] = {1,1,1,1,1,1,1,1,1};
+    cv::Mat erosionElement = cv::Mat(3,3,CV_8UC1, erosionComponents);
+    cv::erode(toClose, toClose, erosionElement);
+    cv::dilate(toClose, toClose, erosionElement);
 }
 
 void drawGridOnMat(cv::Mat& img, cv::Mat& grid, double deltaX, double deltaY, cv::Scalar color) {
@@ -176,6 +185,20 @@ void drawGridOnMat(cv::Mat& img, cv::Mat& grid, double deltaX, double deltaY, cv
     }
 }
 
+void fillBg(cv::Mat& bg,const  cv::Mat& sea,const cv::Mat& boats, cv::Mat& laplacian){
+    cv::Mat adder;
+    cv::bitwise_or(boats, bg, adder);
+    cv::bitwise_or(sea, adder, adder);
+    cv::Mat dilationElement = cv::Mat::ones(cv::Size(5,5), CV_8UC1);
+    cv::dilate(adder, adder, dilationElement);
+    cv::bitwise_not(adder, adder);
+    dilationElement = cv::Mat::ones(cv::Size(7,7), CV_8UC1);
+    cv::dilate(laplacian, laplacian, dilationElement);
+    cv::bitwise_not(laplacian, laplacian);
+    cv::bitwise_and(laplacian, adder, adder);
+    cv::bitwise_or(adder, bg, bg);
+}
+
 void SegmentationInfo::performSegmentation(bool showResults) {
     cv::Mat markersMask = cv::Mat::zeros(image.size(), CV_8U);
 	if(false)
@@ -187,8 +210,8 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 	else
 	{   
         cv::Mat denseMarkers = image.clone();
-		unsigned int cels_x = 50;
-		unsigned int cels_y = 50;
+		unsigned int cels_x = 40;
+		unsigned int cels_y = 40;
         cv::Mat accumulator = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_32FC3);
         cv::Mat grid = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_8UC3);
 		double delta_x = image.cols/cels_x;
@@ -226,7 +249,7 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 			{
 				const double y0 = delta_y*y + delta_y/2;
                 const cv::Vec3f binValue = accumulator.at<cv::Vec3f>(y,x);
-				if(binValue[0]>=3 or binValue[1]>=3 or binValue[2]>=3)
+				if(binValue[0]>=2 or binValue[1]>=2 or binValue[2]>=2)
 				{
 					if(binValue[0]>binValue[1] and binValue[0]>binValue[2])
 					{   
@@ -251,9 +274,37 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 		}
         cv::Mat chs[3];
         cv::split(grid, chs);
-        matErodeDilate3x3(chs[0]);
+        matDilateErode3x3(chs[0]);
+        matDilateErode3x3(chs[1]);
+        matDilateErode3x3(chs[2]);
+
+        /*matErodeDilate3x3(chs[0]);
         matErodeDilate3x3(chs[1]);
-        matErodeDilate3x3(chs[2]);
+        matErodeDilate3x3(chs[2]);*/
+
+        cv::imshow("BG", chs[2]);
+        cv::imshow("SEA", chs[1]);
+        cv::imshow("BOATS", chs[0]);
+
+
+        cv::Mat gray, laplacian;
+        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+        
+        cv::GaussianBlur(gray,gray, cv::Size(5,5), 0);
+        
+        cv::Laplacian(gray, laplacian, CV_32FC1);
+        cv::normalize(laplacian, laplacian, cv::NORM_MINMAX);
+        cv::threshold(laplacian,laplacian, 0.01, 1., cv::THRESH_BINARY);
+        laplacian *= 255;
+        laplacian.convertTo(laplacian, CV_8UC1);
+        cv::resize(laplacian, laplacian, cv::Size(cels_y, cels_x), cv::INTER_MAX);
+        cv::imshow("LAPLACIAN", laplacian);
+
+        fillBg(chs[2], chs[1], chs[0], laplacian);
+
+        cv::imshow("BG", chs[2]);
+        cv::imshow("SEA", chs[1]);
+        cv::imshow("BOATS", chs[0]);
 
         drawGridOnMat(markersMask, chs[0], delta_x, delta_y, cv::Scalar::all(BOAT_LABEL));
         drawGridOnMat(markersMask, chs[1], delta_x, delta_y, cv::Scalar::all(SEA_LABEL));

@@ -57,11 +57,11 @@ int main(int argc, char** argv)
     }
     
 
-    KMeansClassifier classifier(100000.);
+    KMeansClassifier classifier(100000000000.);
     
     if(build){
         classifier.clusterSeaKps(seaInputs,20000, true);
-        classifier.clusterboatsKps(boatsInputs, 10000, true);
+        classifier.clusterboatsKps(boatsInputs, 20000, true);
         classifier.clusterbgKps(bgInputs, 20000, true);
         classifier.save(input_directory);
     }

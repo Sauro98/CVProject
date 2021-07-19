@@ -44,11 +44,21 @@ double closerInMat(cv::Mat& mat, std::vector<double>& descriptor){
     descMat.push_back( cv::Mat(descriptor, false).reshape(1,1));
 
     double minDist = cv::norm(mat.row(0), descMat, cv::NORM_L2);
+    double secondDist = 1e15;
     for(int i = 1; i < mat.rows; i++){
         double dist = cv::norm(mat.row(i), descMat, cv::NORM_L2);
-        if(dist < minDist)
+        if(dist < minDist){
+            secondDist = minDist;
             minDist = dist;
+        }
     }
+
+    const double ratio = 2.;
+    if(minDist < ratio * secondDist)
+        return minDist;
+    else
+        return 1e15;
+
     return minDist;
 }
 
@@ -60,6 +70,7 @@ double closerInVector(std::vector<std::vector<double>>& vector, std::vector<doub
             minDist = dist;
         }
     }
+    
     return minDist;
 }
 
@@ -79,15 +90,86 @@ void KMeansClassifier::clusterbgKps(std::vector<std::vector<double>>& bgKps, int
         std::cout<<"Compactness for bg kps: "<<comp<<std::endl;
 }
 
+double findBestMatch(cv::Mat& centroids, std::vector<double> descriptor){
+    std::vector<std::vector<double>> temp;
+    temp.push_back(descriptor);
+    cv::Mat descrMat = matFromVecOfVec<float>(temp, CV_32F);
+    //cv::Mat cvtCentroids;
+    //centroids.convertTo(cvtCentroids, CV_32F);
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+    std::vector< std::vector<cv::DMatch> > knn_matches;
+    matcher->knnMatch(descrMat, centroids, knn_matches, 2 );
+    //std::cout<<"size "<<knn_matches.size()<<std::endl;
+    //-- Filter matches using the Lowe's ratio test
+    const float ratio_thresh = 2.f;
+    std::vector<cv::DMatch> good_matches;
+    for (size_t i = 0; i < knn_matches.size(); i++)
+    {
+        if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+        {
+            good_matches.push_back(knn_matches[i][0]);
+        }
+    }
+    if(good_matches.size() > 0){
+        return (double)good_matches[0].distance;
+    } else {
+        return 1e16;
+    }
+}
+
 int KMeansClassifier::predictLabel(std::vector<double>& descriptor){
     double minSeaDist, minBoatDist,minBgDist;
-    //minSeaDist = closerInVector(seaCentroids, descriptor);
-    //minBoatDist = closerInVector(boatsCentroids, descriptor);
+
+
+    /// --- FLANN
 
     minSeaDist = closerInMat(seaCMat, descriptor);
     minBoatDist = closerInMat(boatsCMat, descriptor);
+    minBgDist = closerInMat(bgCMat, descriptor);
 
-    double bestDist = 0;
+    double bestDist = minSeaDist, secondBestDist = minSeaDist;
+    unsigned int bestLabel = SEA_TARGET;
+
+    if(minBoatDist < minBgDist){
+        if(minBoatDist < bestDist) {
+            bestDist = minBoatDist;
+            bestLabel = BOAT_TARGET;
+            if(minBgDist < secondBestDist)
+                secondBestDist = minBgDist;
+        } else {
+            secondBestDist = minBoatDist;
+        }
+    } else {
+        if(minBgDist < bestDist) {
+            bestDist = minBgDist;
+            bestLabel = BG_TARGET;
+            if(minBoatDist < secondBestDist)
+                secondBestDist = minBoatDist;
+        } else {
+            secondBestDist = minBgDist;
+        }
+    }
+
+    const double ratio = 0.9d;
+    if(bestDist < ratio * secondBestDist)
+        return bestLabel;
+    else
+        return 0;
+
+
+
+
+
+
+
+
+    /// --- FLANN
+
+
+    //minSeaDist = closerInMat(seaCMat, descriptor);
+    //minBoatDist = closerInMat(boatsCMat, descriptor);
+
+    /*double bestDist = 0;
     int label = 0;
     if(bgCMat.rows == 0){
         label = BG_TARGET;
@@ -114,9 +196,9 @@ int KMeansClassifier::predictLabel(std::vector<double>& descriptor){
                 label = 0; // no target, no marker will be set
             }
         }
-    }
+    }*/
 
-    return label;
+    //return label;
 }
 
 void KMeansClassifier::save(cv::String& inputDirectory){
@@ -132,10 +214,10 @@ void KMeansClassifier::save(cv::String& inputDirectory){
 void KMeansClassifier::load(cv::String& inputDirectory, bool bg){
     std::vector<std::vector<double>> seaCentroids, boatsCentroids, bgCentroids, vInputs, tInputs;
     std::vector<uint>  vOutputs, tOutputs;
-    loadDataset(inputDirectory + "/kmclassifier/seaCentroids.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000,0,0, false);
-    loadDataset(inputDirectory + "/kmclassifier/boatsCentroids.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000,0,0, false);
+    loadDataset(inputDirectory + "/kmclassifier/seaCentroids.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 10000000,0,0, false);
+    loadDataset(inputDirectory + "/kmclassifier/boatsCentroids.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 100000000,0,0, false);
     if(bg){
-        loadDataset(inputDirectory + "/kmclassifier/bgCentroids.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000000,0,0, false);
+        loadDataset(inputDirectory + "/kmclassifier/bgCentroids.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 10000000,0,0, false);
     }/*loadDataset(inputDirectory + "_sea_kp_dataset.txt", seaCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     loadDataset(inputDirectory + "_boats_kp_dataset.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     loadDataset(inputDirectory + "_bg_kp_dataset.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
