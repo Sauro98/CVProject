@@ -173,31 +173,155 @@ void matErodeDilate3x3(cv::Mat& toClose){
     cv::dilate(toClose, toClose, erosionElement);
 }
 
-void drawGridOnMat(cv::Mat& img, cv::Mat& grid, double deltaX, double deltaY, cv::Scalar color) {
+void matDilateErode2x2(cv::Mat& toClose){
+    cv::Mat erosionElement = cv::Mat::ones(2,2,CV_8UC1);
+    cv::dilate(toClose, toClose, erosionElement);
+    cv::erode(toClose, toClose, erosionElement);
+}
+
+void matErodeDilate2x2(cv::Mat& toClose){
+    cv::Mat erosionElement = cv::Mat::ones(cv::Size(2,2),CV_8UC1);
+    cv::erode(toClose, toClose, erosionElement);
+    cv::dilate(toClose, toClose, erosionElement);
+}
+
+void removeIsolatedPixels(cv::Mat& image){
+    for(int r = 1; r < image.rows - 1; r++){
+        for(int c = 1; c < image.cols - 1; c++){
+            int sum = image.at<uchar>(r-1,c-1) + image.at<uchar>(r-1,c) + image.at<uchar>(r-1,c+1);
+            sum = sum + image.at<uchar>(r,c-1) + image.at<uchar>(r,c+1);
+            sum = sum + image.at<uchar>(r+1,c-1) + image.at<uchar>(r+1,c) + image.at<uchar>(r+1,c+1);
+            if(sum == 0)
+                image.at<uchar>(r,c) = 0;
+        }
+    }
+}
+
+void drawMarkersFromGrid(cv::Mat& img, cv::Mat& grid, cv::Mat& coms, double deltaX, double deltaY, cv::Scalar color){
     for(int r = 0; r < grid.rows; r++){
         const double y0 = deltaY*r + deltaY/2;
         for(int c = 0; c < grid.cols; c++){
             const double x0 = deltaX*c + deltaX/2;
             if(grid.at<uchar>(r,c) > 0){
-                cv::circle(img, cv::Point2f(x0,y0),1, color, -1, 8, 0 );
+                cv::Vec2f com = coms.at<cv::Vec2f>(r,c);
+                if(com[0] > 0. && com[1] > 0.)
+                    cv::circle(img, cv::Point2f(com[0], com[1]),1, color, -1, 8, 0 );
+                else
+                    cv::circle(img, cv::Point2f(x0, y0),1, color, -1, 8, 0 );
             }
         }
     }
 }
 
-void fillBg(cv::Mat& bg,const  cv::Mat& sea,const cv::Mat& boats, cv::Mat& laplacian){
-    cv::Mat adder;
+void drawGridOnMat(cv::Mat& img, cv::Mat& grid,cv::Mat& coms, double deltaX, double deltaY, cv::Scalar color) {
+    for(int r = 0; r < grid.rows; r++){
+        const double y0 = deltaY*r + deltaY/2;
+        for(int c = 0; c < grid.cols; c++){
+            const double x0 = deltaX*c + deltaX/2;
+            if(grid.at<uchar>(r,c) > 0){
+                cv::rectangle(img, cv::Rect(x0 - deltaX/2, y0 - deltaY/2, deltaX, deltaY),color, -1, 8);
+                cv::Vec2f com = coms.at<cv::Vec2f>(r,c);
+                if(com[0] > 0. && com[1] > 0.)
+                    cv::circle(img, cv::Point2f(com[0], com[1]),1, cv::Scalar(255,255,255), -1, 8, 0 );
+                else
+                    cv::circle(img, cv::Point2f(x0, y0),1, cv::Scalar(255,255,255), -1, 8, 0 );
+            }
+        }
+    }
+}
+
+void fillBg(cv::Mat& bg,cv::Mat& sea,const cv::Mat& boats, cv::Mat& laplacian){
+    cv::Mat adder = cv::Mat::zeros(bg.size(), bg.type());
+    cv::Mat seaAdder;
     cv::bitwise_or(boats, bg, adder);
     cv::bitwise_or(sea, adder, adder);
     cv::Mat dilationElement = cv::Mat::ones(cv::Size(5,5), CV_8UC1);
     cv::dilate(adder, adder, dilationElement);
     cv::bitwise_not(adder, adder);
+    seaAdder = adder.clone();
     dilationElement = cv::Mat::ones(cv::Size(7,7), CV_8UC1);
     cv::dilate(laplacian, laplacian, dilationElement);
     cv::bitwise_not(laplacian, laplacian);
     cv::bitwise_and(laplacian, adder, adder);
     cv::bitwise_or(adder, bg, bg);
+    /*cv::bitwise_not(adder, adder);
+    cv::bitwise_and(seaAdder, adder, seaAdder);
+    cv::bitwise_or(seaAdder, sea, sea);*/
 }
+
+void fillKpAccumulator(std::vector<cv::KeyPoint>& kps, cv::Mat& accumulator, cv::Mat& coms, int index, double delta_x, double delta_y, uint cels_x, uint cels_y){
+    for(const auto& kp: kps){
+        unsigned int x = kp.pt.x/delta_x;
+        unsigned int y = kp.pt.y/delta_y;
+        x = x<cels_x?x:cels_x-1;
+        y = y<cels_y?y:cels_y-1;
+        accumulator.at<cv::Vec3f>(y,x)(index)+= 1.;
+        coms.at<cv::Vec2f>(y,x) += cv::Vec2f(kp.pt.x, kp.pt.y);
+    }
+    for(int r = 0; r < coms.rows; r++){
+        for(int c = 0; c < coms.cols; c++){
+            float acc = accumulator.at<cv::Vec3f>(r,c)(index);
+            if(acc>= 1.)
+                coms.at<cv::Vec2f>(r,c) /= acc;
+        }
+    }
+}
+
+void fillGrid(cv::Mat& accumulator, cv::Mat& grid){
+    for(unsigned int x=0; x<accumulator.cols; ++x)
+		{
+			for(unsigned int y=0; y<accumulator.rows; ++y)
+			{
+                const cv::Vec3f binValue = accumulator.at<cv::Vec3f>(y,x);
+                float tot = binValue[BOAT_GRID_INDEX] + binValue[SEA_GRID_INDEX] + binValue[BG_GRID_INDEX];
+                if(tot  == 0)
+                    continue;
+                float density = 1. / tot;
+                
+                if(binValue[BOAT_GRID_INDEX] / density > 0.33 || binValue[SEA_GRID_INDEX] / density > 0.33 || binValue[BG_GRID_INDEX] / density > 0.33)
+				{
+					if(binValue[BOAT_GRID_INDEX]>binValue[SEA_GRID_INDEX] && binValue[BOAT_GRID_INDEX]>binValue[BG_GRID_INDEX])
+					{   
+                        grid.at<cv::Vec3b>(y,x)(BOAT_GRID_INDEX) = 255;
+					}
+					if(binValue[SEA_GRID_INDEX]>binValue[BOAT_GRID_INDEX] && binValue[SEA_GRID_INDEX]>binValue[BG_GRID_INDEX])
+					{
+                        grid.at<cv::Vec3b>(y,x)(SEA_GRID_INDEX) = 255;
+					}
+					if(binValue[BG_GRID_INDEX]>binValue[BOAT_GRID_INDEX] && binValue[BG_GRID_INDEX]>binValue[SEA_GRID_INDEX])
+					{
+                        grid.at<cv::Vec3b>(y,x)(BG_GRID_INDEX) = 255;
+					}
+				}
+			}
+		}
+}
+
+cv::Mat getLaplacianMask(cv::Mat& image, uint cels_x, uint cels_y){
+    cv::Mat gray, laplacian;
+    cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
+    
+    cv::GaussianBlur(gray,gray, cv::Size(5,5), 0);
+    
+    cv::Laplacian(gray, laplacian, CV_32FC1);
+    cv::normalize(laplacian, laplacian, cv::NORM_MINMAX);
+    cv::threshold(laplacian,laplacian, 0.01, 1., cv::THRESH_BINARY);
+    laplacian *= 255;
+    laplacian.convertTo(laplacian, CV_8UC1);
+    cv::resize(laplacian, laplacian, cv::Size(cels_x, cels_y), cv::INTER_MAX);
+    return laplacian;
+}
+
+void morphMask(cv::Mat& mask){
+    cv::Size largeSize = cv::Size(mask.cols*2, mask.rows*2);
+    cv::Size origSize = mask.size();
+
+    cv::resize(mask,mask, largeSize, cv::INTER_NEAREST);
+    cv::morphologyEx(mask, mask, cv::MORPH_OPEN, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5,5)));
+    cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(5,5)));
+    cv::resize(mask, mask, origSize);
+}
+
 
 void SegmentationInfo::performSegmentation(bool showResults) {
     cv::Mat markersMask = cv::Mat::zeros(image.size(), CV_8U);
@@ -210,109 +334,66 @@ void SegmentationInfo::performSegmentation(bool showResults) {
 	else
 	{   
         cv::Mat denseMarkers = image.clone();
-		unsigned int cels_x = 40;
-		unsigned int cels_y = 40;
-        cv::Mat accumulator = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_32FC3);
-        cv::Mat grid = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_8UC3);
+
+        unsigned int maxDim = 50;
+		unsigned int cels_x = maxDim;
+		unsigned int cels_y = maxDim;
+
+        if(image.rows >= image.cols){
+            cels_x = (maxDim * image.cols)/(image.rows);
+        } else {
+            cels_y = (maxDim * image.rows)/(image.cols);
+        }
+
 		double delta_x = image.cols/cels_x;
 		double delta_y = image.rows/cels_y;
 		
-		for(const auto& kp: boatKps)
-		{
-			unsigned int x = kp.pt.x/delta_x;
-			unsigned int y = kp.pt.y/delta_y;
-			x = x<cels_x?x:cels_x-1;
-			y = y<cels_y?y:cels_y-1;
-            accumulator.at<cv::Vec3f>(y,x)(0)+= 1.;
-		}
-		for(const auto& kp: seaKps)
-		{
-			unsigned int x = kp.pt.x/delta_x;
-			unsigned int y = kp.pt.y/delta_y;
-			x = x<cels_x?x:cels_x-1;
-			y = y<cels_y?y:cels_y-1;
-            accumulator.at<cv::Vec3f>(y,x)(1) += 1.;
-		}
-		for(const auto& kp: bgKps)
-		{
-			unsigned int x = kp.pt.x/delta_x;
-			unsigned int y = kp.pt.y/delta_y;
-			x = x<cels_x?x:cels_x-1;
-			y = y<cels_y?y:cels_y-1;
-            accumulator.at<cv::Vec3f>(y,x)(2) += 1.;
-		}
-		
-		for(unsigned int x=0; x<cels_x; ++x)
-		{
-			const double x0 = delta_x*x + delta_x/2;
-			for(unsigned int y=0; y<cels_y; ++y)
-			{
-				const double y0 = delta_y*y + delta_y/2;
-                const cv::Vec3f binValue = accumulator.at<cv::Vec3f>(y,x);
-				if(binValue[0]>=2 or binValue[1]>=2 or binValue[2]>=2)
-				{
-					if(binValue[0]>binValue[1] and binValue[0]>binValue[2])
-					{   
-                        grid.at<cv::Vec3b>(y,x)(0) = 255;
-						//cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BOAT_LABEL), -1, 8, 0 );
-						//cv::circle( denseMarkers, cv::Point2f(x0,y0),1, cv::Scalar(0,255,0), -1, 8, 0 );
-					}
-					if(binValue[1]>binValue[0] and binValue[1]>binValue[2])
-					{
-                        grid.at<cv::Vec3b>(y,x)(1) = 255;
-						//cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(SEA_LABEL), -1, 8, 0 );
-						//cv::circle( denseMarkers, cv::Point2f(x0,y0),1, cv::Scalar(0,0,255), -1, 8, 0 );
-					}
-					if(binValue[2]>binValue[0] and binValue[2]>binValue[1])
-					{
-                        grid.at<cv::Vec3b>(y,x)(2) = 255;
-						//cv::circle( markersMask, cv::Point2f(x0,y0),1, cv::Scalar::all(BG_LABEL), -1, 8, 0 );
-						//cv::circle( denseMarkers, cv::Point2f(x0,y0),1, cv::Scalar(255,0,0), -1, 8, 0 );
-					}
-				}
-			}
-		}
+
+        cv::Mat accumulator = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_32FC3);
+        cv::Mat grid = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_8UC3);
+        cv::Mat boatsComs = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_32FC2);
+        cv::Mat seaComs = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_32FC2);
+        cv::Mat bgComs = cv::Mat::zeros(cv::Size(cels_x, cels_y), CV_32FC2);
+
+        fillKpAccumulator(boatKps, accumulator, boatsComs, BOAT_GRID_INDEX, delta_x, delta_y, cels_x, cels_y);
+        fillKpAccumulator(seaKps, accumulator, seaComs, SEA_GRID_INDEX, delta_x, delta_y, cels_x, cels_y);
+        fillKpAccumulator(bgKps, accumulator, bgComs, BG_GRID_INDEX, delta_x, delta_y, cels_x, cels_y);
+		fillGrid(accumulator, grid);
+
         cv::Mat chs[3];
         cv::split(grid, chs);
-        matDilateErode3x3(chs[0]);
-        matDilateErode3x3(chs[1]);
-        matDilateErode3x3(chs[2]);
 
-        /*matErodeDilate3x3(chs[0]);
-        matErodeDilate3x3(chs[1]);
-        matErodeDilate3x3(chs[2]);*/
-
-        cv::imshow("BG", chs[2]);
-        cv::imshow("SEA", chs[1]);
-        cv::imshow("BOATS", chs[0]);
-
-
-        cv::Mat gray, laplacian;
-        cv::cvtColor(image, gray, cv::COLOR_BGR2GRAY);
         
-        cv::GaussianBlur(gray,gray, cv::Size(5,5), 0);
+        /*matDilateErode3x3(chs[BOAT_GRID_INDEX]);
+        matDilateErode3x3(chs[SEA_GRID_INDEX]);
+        matDilateErode3x3(chs[BG_GRID_INDEX]);
+
+
+        //removeIsolatedPixels(chs[BOAT_GRID_INDEX]);
+        if(boatKps.size() > 15)
+            matErodeDilate3x3(chs[BOAT_GRID_INDEX]);
+        matErodeDilate3x3(chs[SEA_GRID_INDEX]);
+        matErodeDilate3x3(chs[BG_GRID_INDEX]);*/
+        morphMask(chs[BOAT_GRID_INDEX]);
+        morphMask(chs[SEA_GRID_INDEX]);
+        morphMask(chs[BG_GRID_INDEX]);
+
+
+        cv::Mat laplacian = getLaplacianMask(image, cels_x, cels_y);
+        fillBg(chs[BG_GRID_INDEX], chs[SEA_GRID_INDEX], chs[BOAT_GRID_INDEX], laplacian);
+
+        // BG has lowest priority, drawn first
+        drawMarkersFromGrid(markersMask, chs[BG_GRID_INDEX],bgComs, delta_x, delta_y, cv::Scalar::all(BG_LABEL));
+        // sea drawn next
+        drawMarkersFromGrid(markersMask, chs[SEA_GRID_INDEX], seaComs, delta_x, delta_y, cv::Scalar::all(SEA_LABEL));
+        // boats have highest priority and so gat drawn last
+        drawMarkersFromGrid(markersMask, chs[BOAT_GRID_INDEX],boatsComs,  delta_x, delta_y, cv::Scalar::all(BOAT_LABEL));
         
-        cv::Laplacian(gray, laplacian, CV_32FC1);
-        cv::normalize(laplacian, laplacian, cv::NORM_MINMAX);
-        cv::threshold(laplacian,laplacian, 0.01, 1., cv::THRESH_BINARY);
-        laplacian *= 255;
-        laplacian.convertTo(laplacian, CV_8UC1);
-        cv::resize(laplacian, laplacian, cv::Size(cels_y, cels_x), cv::INTER_MAX);
-        cv::imshow("LAPLACIAN", laplacian);
-
-        fillBg(chs[2], chs[1], chs[0], laplacian);
-
-        cv::imshow("BG", chs[2]);
-        cv::imshow("SEA", chs[1]);
-        cv::imshow("BOATS", chs[0]);
-
-        drawGridOnMat(markersMask, chs[0], delta_x, delta_y, cv::Scalar::all(BOAT_LABEL));
-        drawGridOnMat(markersMask, chs[1], delta_x, delta_y, cv::Scalar::all(SEA_LABEL));
-        drawGridOnMat(markersMask, chs[2], delta_x, delta_y, cv::Scalar::all(BG_LABEL));
-
-        drawGridOnMat(denseMarkers, chs[0], delta_x, delta_y, cv::Scalar(0,255,0));
-        drawGridOnMat(denseMarkers, chs[1], delta_x, delta_y, cv::Scalar(0,0,255));
-        drawGridOnMat(denseMarkers, chs[2], delta_x, delta_y, cv::Scalar(255,0,0));
+        
+        
+        drawGridOnMat(denseMarkers, chs[BG_GRID_INDEX],bgComs, delta_x, delta_y, cv::Scalar(255,0,0));
+        drawGridOnMat(denseMarkers, chs[SEA_GRID_INDEX],seaComs, delta_x, delta_y, cv::Scalar(0,0,255));
+        drawGridOnMat(denseMarkers, chs[BOAT_GRID_INDEX],boatsComs, delta_x, delta_y, cv::Scalar(0,255,0));
 
 
         if(showResults){

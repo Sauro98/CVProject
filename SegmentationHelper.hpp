@@ -16,6 +16,10 @@
 #define BOATS_CH_INDEX 1 // green channel
 #define SEA_CH_INDEX 2 // red channel
 
+#define BOAT_GRID_INDEX 0
+#define SEA_GRID_INDEX 1
+#define BG_GRID_INDEX 2
+
 #include <iostream>
 #include <fstream>
 #include <random>
