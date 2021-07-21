@@ -6,6 +6,7 @@
 #define BOAT_MASK_EXT "*_maskb.png"
 #define MASK_TOKEN "_mask"
 #define DATASET_TOKEN "kp_dataset"
+#define PARAMETERS_TOKEN "parameters"
 
 // target values defined in DatasetHelper.hpp
 #define BOAT_LABEL BOAT_TARGET
@@ -30,6 +31,7 @@
 #include "Utils.hpp"
 #include "DatasetHelper.hpp"
 #include <opencv2/core/utils/filesystem.hpp>
+#include <opencv2/objdetect.hpp>
 
 typedef unsigned int (*classFunc)(std::vector<double>&, void*);
 
@@ -44,8 +46,9 @@ class SegmentationInfo {
         };
         void computeKeypoints(bool sharpen, classFunc classify = nullptr, void* usrData = nullptr, unsigned int numThread = 1);
         void showLabeledKps();
-        void performSegmentation(bool showResults);
-        std::vector<double> computeIOU(bool showBoxes);
+        void performSegmentation(bool showResults, bool addBg, uint maxDim, double minNormVariance);
+        void findBBoxes(bool showBoxes, double minPercArea, double maxOverlapMetric);
+        std::vector<double> computeIOU(bool showBoxes, double minPercArea, double maxOverlapMetric, uint& falsePos, uint& falseNeg);
         double computePixelAccuracy();
         cv::String& getName();
         void appendBoatsDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;

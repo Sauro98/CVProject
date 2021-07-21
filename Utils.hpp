@@ -53,5 +53,6 @@ void showMask(cv::String name, cv::Mat& img, cv::Mat& mask, bool boat);
 void saveMask(cv::String baseName, cv::Mat& mask, bool boat);
 void sharpen(cv::Mat& input, cv::Mat& output, int laplacianWeight = 1);
 double median(cv::Mat& img);
+std::string type2str(int type);
 
 #endif // __UTILS_HPP_INCLUDED__

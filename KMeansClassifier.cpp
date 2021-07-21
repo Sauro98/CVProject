@@ -26,7 +26,7 @@ double cluster(std::vector<std::vector<double>>& input, int k,cv::Mat& output){
     cv::Mat labels;
     std::cout<<"Input matrix size: "<<in.rows<<"x"<<in.cols<<std::endl;
     output.convertTo(output, CV_32F);
-    double comp = cv::kmeans(in, k, labels, cv::TermCriteria(cv::TermCriteria::MAX_ITER, 10, 0), 5, cv::KmeansFlags::KMEANS_RANDOM_CENTERS, output);
+    double comp = cv::kmeans(in, k, labels, cv::TermCriteria(cv::TermCriteria::MAX_ITER, 20, 0), 5, cv::KmeansFlags::KMEANS_PP_CENTERS, output);
     std::cout<<"Output matrix size: "<<output.rows<<"x"<<output.cols<<", channels: "<<output.channels()<<std::endl;
     output.convertTo(output, CV_64F);
     return comp;
@@ -120,9 +120,6 @@ double findBestMatch(cv::Mat& centroids, std::vector<double> descriptor){
 int KMeansClassifier::predictLabel(std::vector<double>& descriptor){
     double minSeaDist, minBoatDist,minBgDist;
 
-
-    /// --- FLANN
-
     minSeaDist = closerInMat(seaCMat, descriptor);
     minBoatDist = closerInMat(boatsCMat, descriptor);
     minBgDist = closerInMat(bgCMat, descriptor);
@@ -150,55 +147,10 @@ int KMeansClassifier::predictLabel(std::vector<double>& descriptor){
         }
     }
 
-    const double ratio = 0.9d;
-    if(bestDist < ratio * secondBestDist)
+    if(bestDist < decisionRatio * secondBestDist)
         return bestLabel;
     else
         return 0;
-
-
-
-
-
-
-
-
-    /// --- FLANN
-
-
-    //minSeaDist = closerInMat(seaCMat, descriptor);
-    //minBoatDist = closerInMat(boatsCMat, descriptor);
-
-    /*double bestDist = 0;
-    int label = 0;
-    if(bgCMat.rows == 0){
-        label = BG_TARGET;
-    }
-    if(minSeaDist < minBoatDist){
-        bestDist = minSeaDist;
-        if(minSeaDist < threshold){
-            label = SEA_TARGET;
-        }
-    } else {
-        bestDist = minBoatDist;
-        if(minBoatDist < threshold){
-            label = BOAT_TARGET;
-        }
-    }
-
-    if(bgCMat.rows > 0){
-        //minBgDist = closerInVector(bgCentroids, descriptor);
-        minBgDist = closerInMat(bgCMat, descriptor);
-        if(minBgDist < bestDist) {
-            if(minBgDist < threshold){
-                label = BG_TARGET;
-            } else {
-                label = 0; // no target, no marker will be set
-            }
-        }
-    }*/
-
-    //return label;
 }
 
 void KMeansClassifier::save(cv::String& inputDirectory){

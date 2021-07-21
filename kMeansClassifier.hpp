@@ -10,7 +10,7 @@
 class KMeansClassifier {
     public:
 
-        KMeansClassifier(double threshold): threshold(threshold){}
+        KMeansClassifier(double decisionRatio): decisionRatio(decisionRatio){}
 
         void clusterSeaKps(std::vector<std::vector<double>>& seaKps, int k, bool printComp);
         void clusterboatsKps(std::vector<std::vector<double>>& boatsKps, int k, bool printComp);
@@ -21,7 +21,7 @@ class KMeansClassifier {
         void save(cv::String& inputDirectory);
         void load(cv::String& inputDirectory, bool bg = true);
     private:
-        double threshold;
+        double decisionRatio;
         //std::vector<std::vector<double>> seaCentroids;
         //std::vector<std::vector<double>> boatsCentroids;
         //std::vector<std::vector<double>> bgCentroids;
