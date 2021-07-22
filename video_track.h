@@ -78,10 +78,11 @@ class video_track {
 
   
 
-    int checkBoats(const Rect& ROI, const Mat& currentFrame, KMeansClassifier classifier, int &descSize, vector<Point2f> &keyBBpoints)
+    int checkBoats(const Rect& ROI, const Mat& currentFrame, KMeansClassifier classifier, int &descSize, vector<Point2f> &keyboatsBBpoints)
     {
 
 
+        vector<Point2f> allkeyBBpoints;
         vector<KeyPoint> keypframe;
         vector<vector<double>> descVect;
         bool label;
@@ -93,7 +94,7 @@ class video_track {
         singleROI.push_back(ROI);
         Mat colframe = featImg.findBinMask(currentFrame, singleROI);
         keypframe = featImg.findFeatures(currentFrame, colframe, descrframe);
-        KeyPoint::convert(keypframe,keyBBpoints);
+        KeyPoint::convert(keypframe,allkeyBBpoints);
         appendDescriptors(descVect, descrframe, 0, false);
         descSize = descVect.size();
 
@@ -102,6 +103,7 @@ class video_track {
 
             if (label == BOAT_LABEL) {
                 num_boats++;
+                keyboatsBBpoints.push_back(allkeyBBpoints[i]);
 
             }
 
