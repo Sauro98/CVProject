@@ -248,8 +248,8 @@ void fillBg(cv::Mat& bg,cv::Mat& sea,const cv::Mat& boats, cv::Mat& laplacian, b
     cv::bitwise_and(laplacian, adder, adder);
     if(addBg)
         cv::bitwise_or(adder, bg, bg);
-    else
-        cv::bitwise_or(adder, sea, sea);
+    //else
+    //    cv::bitwise_or(adder, sea, sea);
     /*cv::bitwise_not(adder, adder);
     cv::bitwise_and(seaAdder, adder, seaAdder);
     cv::bitwise_or(seaAdder, sea, sea);*/
@@ -325,7 +325,7 @@ void morphMask(cv::Mat& mask, int maskSize){
     cv::resize(mask,mask, largeSize, cv::INTER_NEAREST);
     cv::morphologyEx(mask, mask, cv::MORPH_OPEN, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(maskSize,maskSize)));
     cv::morphologyEx(mask, mask, cv::MORPH_CLOSE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(maskSize,maskSize)));
-    cv::resize(mask, mask, origSize);
+    cv::resize(mask, mask, origSize, cv::INTER_NEAREST);
 }
 
 float meanVec(std::vector<float>& vec){
@@ -342,7 +342,7 @@ float varVec(std::vector<float>& vec, float mean){
     return acc / vec.size();
 }
 
-bool isNoisySmallBoat(cv::Mat& boatsGrid){
+bool isNoisySmallBoat(cv::Mat& boatsGrid, double varThreshold){
     SiftMasked smasked;
     std::vector<cv::Rect> initialBoxes;
     std::vector<float> xs, ys;
@@ -356,11 +356,35 @@ bool isNoisySmallBoat(cv::Mat& boatsGrid){
     float meanY = meanVec(ys);
     float varX = varVec(xs, meanX);
     float varY = varVec(ys, meanY);
-    float varCoeffX = varX / boatsGrid.cols;
-    float varCoeffY = varY / boatsGrid.rows;
+    float varCoeffX = sqrtf(varX) / boatsGrid.cols;
+    float varCoeffY = sqrtf(varY) / boatsGrid.rows;
+    std::cout<<"varcoeffX "<<varCoeffX<<" varcoeffY "<<varCoeffY;
+    // If the detected boats are small and distributed over 33% of both directions then 
+    // it is most likely that the detected boats are noise. It is not possible
+    // to distinguish an image with many sparse small boats to an image with just
+    // noise detections. 
+    if (varCoeffX > varThreshold || varCoeffY > varThreshold){
+        // if the variance along one direction results to be significantly
+        // bigger than the variance along the other, then it is likey that we are 
+        // experiencing a convoy of small boats, since we assume that noise would be
+        // more or less evenly distributed along both directions.
 
-
-    return varCoeffX > 0.25 && varCoeffY > 0.25;
+        float condNumber = 0.;
+        // both are over the threshold so division by zero is not a concern
+        if(varCoeffX >= varCoeffY){
+            condNumber = varCoeffX / varCoeffY;
+        } else {
+            condNumber = varCoeffY / varCoeffX;
+        }
+        std::cout<<" cond num "<<condNumber<<std::endl;
+        // We want the largest variance to be at least 1.5 times the smallest one to have
+        // a predominant detection direction
+        if(condNumber > 1.5f)
+            return false;
+        else
+            return true;
+    }
+    return false;
 }
 
 bool largeBoatFound(cv::Mat& boatsGrid, double threshold){
@@ -488,11 +512,17 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
 
 
     if(bigBoatFlag){
+        std::cout<<"big boat"<<std::endl;
         morphMask(chs[BOAT_GRID_INDEX],5);
+        cv::morphologyEx(chs[BOAT_GRID_INDEX], chs[BOAT_GRID_INDEX], cv::MORPH_ERODE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3,3)));
+
     } else {
-        bool isNoisy = isNoisySmallBoat(chs[BOAT_GRID_INDEX]);
-        if(isNoisy)
-            morphMask(chs[BOAT_GRID_INDEX],5);
+        std::cout<<"small boat"<<std::endl;
+        bool isNoisy = isNoisySmallBoat(chs[BOAT_GRID_INDEX],0.2);
+        if(isNoisy){
+            // noise, erase hard
+            morphMask(chs[BOAT_GRID_INDEX],21);
+        }
         //morphMask(chs[BOAT_GRID_INDEX],1);
     }
     morphMask(chs[SEA_GRID_INDEX],5);
@@ -500,8 +530,11 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
 
 
     cv::Mat laplacian = getLaplacianMask(image, cels_x, cels_y, minNormVariance);
-    if(addBg)
+    if(addBg){
         fillBg(chs[BG_GRID_INDEX], chs[SEA_GRID_INDEX], chs[BOAT_GRID_INDEX], laplacian, addBg);
+        cv::morphologyEx(chs[SEA_GRID_INDEX], chs[SEA_GRID_INDEX], cv::MORPH_ERODE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3,3)));
+    }
+    
 
     // BG has lowest priority, drawn first
     drawMarkersFromGrid(markersMask, chs[BG_GRID_INDEX],bgComs, delta_x, delta_y, cv::Scalar::all(BG_LABEL));
@@ -519,7 +552,6 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
 
     if(showResults){
         cv::imshow("dense markers", denseMarkers);
-        cv::imshow("actual markers", markersMask);
     }
 
 	
@@ -550,7 +582,6 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
     if (showResults) {
         wshed = wshed*0.5 + image*0.5;
         imshow( "watershed transform", wshed );
-        
         //drawBlobPyramidBoats(image, segmentationResult, 5);
     }
 }
@@ -699,14 +730,18 @@ void SegmentationInfo::findBBoxes(bool showBoxes, double minPercArea, double max
     cv::Mat boatsSegments = getBoatsMaskErodedDilated(segmentationResult);
     // compute bounding boxes on the result
     smasked.binaryToBBoxes(boatsSegments, estBboxes, true);
-    // filter bboxes with area <= 2% of the mean area
-    
-    // display bounding boxes
+
+    std::cout<<"Size before "<<estBboxes.size()<<std::endl;
+
     mergeOverlappingRectangles(estBboxes, maxOverlapMetric);
+    
+    std::cout<<"Size after "<<estBboxes.size()<<std::endl;
 
     uint prevSize = estBboxes.size();
     uint newSize = prevSize;
     
+    
+    // filter bboxes with area <= 2% of the mean area
     do{
         filterBoundingBoxesByArea(estBboxes, minPercArea);
         prevSize = newSize;
@@ -714,8 +749,6 @@ void SegmentationInfo::findBBoxes(bool showBoxes, double minPercArea, double max
     } while(prevSize != newSize);
 
 
-    std::cout<<"Size before "<<estBboxes.size()<<std::endl;
-    std::cout<<"Size after "<<estBboxes.size()<<std::endl;
 
     // display bounding boxes
     if(showBoxes){
@@ -728,6 +761,8 @@ void SegmentationInfo::findBBoxes(bool showBoxes, double minPercArea, double max
         }
         cv::imshow("bboxes after", bboxes_img);
     }
+
+    
 }
 
 std::vector<double> SegmentationInfo::computeIOU(bool showBoxes, double minPercArea, double maxOverlapMetric, uint& falsePos, uint& falseNeg){

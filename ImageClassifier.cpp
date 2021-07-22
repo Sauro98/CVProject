@@ -80,11 +80,17 @@ int main(int argc, char** argv){
         return 1;
     } 
 
-    cv::Mat& image = cv::imread(cv::String(argv[1]));
+    cv::String params_path = cv::String(argv[3]);
+    cv::String image_path = cv::String(argv[1]);
+    std::vector<cv::Rect> dummy;
+    cv::Mat image = cv::imread(image_path);
+    
     SegmentationParams params = readParamsFromFile(cv::String(argv[2]));
+    printParams(params);
+
     KMeansClassifier classifier(params.decisionRatio);
-    classifier.load(argv[3], true);
-    SegmentationInfo imageInfo = SegmentationInfo(image, cv::Mat(), cv::Mat(), cv::Mat(), cv::Mat(), std::vector<cv::Rect>(), cv::String(argv[1]));
+    classifier.load(params_path, true);
+    SegmentationInfo imageInfo = SegmentationInfo(image, cv::Mat(), cv::Mat(), cv::Mat(), dummy, image_path);
     imageInfo.computeKeypoints(true, kmeansCallback, &classifier, 8);
     imageInfo.showLabeledKps();
     imageInfo.performSegmentation(true, params.addBg, params.maxDim, params.minNormVariance);

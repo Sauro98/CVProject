@@ -149,7 +149,7 @@ int main(int argc, char** argv)
 
     SegmentationHelper sHelper = SegmentationHelper(input_directory, images_ext);
     auto segmentationInfos = sHelper.loadInfos(false);
-    computeShowMetrics(segmentationInfos,false, false, &classifier, params.addBg, params.maxDim, params.minNormVariance, params.minPercArea, params.maxOverlapMetric);
+    computeShowMetrics(segmentationInfos,true, false, &classifier, params.addBg, params.maxDim, params.minNormVariance, params.minPercArea, params.maxOverlapMetric);
     //writeParamsToFile(params, input_directory + "parameters.txt");
 }
 

@@ -25,6 +25,7 @@
 #include <fstream>
 #include <random>
 #include <iterator>
+#include <math.h>
 
 #include "SiftMasked.h"
 #include "BlackWhite_He.h"
