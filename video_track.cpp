@@ -12,7 +12,7 @@ using namespace std;
  
 int main(int argc, char **argv) {
 
-    Mat frame, gray, oldFrame, grayframe, firstFrame;
+    Mat frame, gray, oldFrame, grayframe, firstFrame, grayoldFrame;
     vector<vector<Point2f>> oldkp;
 
     if (argc != 3 )
@@ -54,7 +54,8 @@ int main(int argc, char **argv) {
         vector<Rect> outBB, boats, oldoutBB;
         vector<Point2f> kp;
         vector<vector<Point2f>> tempKeyp;
-
+        int num_boats;
+     
         //some preprocessing for every frame
         gray = trck_vd.preproc(frame);
 
@@ -71,11 +72,11 @@ int main(int argc, char **argv) {
             if(!oldkp.empty()){
 
                 cvtColor(frame, grayframe, COLOR_BGR2GRAY);
-
+                cvtColor(oldFrame, grayoldFrame, COLOR_BGR2GRAY);
 
                 for(int k = 0; k < oldkp.size(); k++) {
                     kp = trck_vd.track(oldFrame, grayframe, oldkp[k]);
-                    cout << "num_keyponBB " << num_keyponBB << endl;
+                    //cout << "num_keyponBB " << num_keyponBB << endl;
                     for (int j = 0; j < kp.size(); j++) {
                         if (outBB[i].contains(kp[j])) {
                             num_keyponBB++;
@@ -85,7 +86,7 @@ int main(int argc, char **argv) {
                 }
             }
              
-            if(num_keyponBB < 200) {
+            if(num_keyponBB < 50) {
                 num_boats = trck_vd.checkBoats(outBB[i], frame, classifier, sizeROI,kp);
 
                 if (num_boats > (sizeROI / 6)) {
@@ -109,7 +110,7 @@ int main(int argc, char **argv) {
         oldkp = tempKeyp;
 
             //finally draw the rects found
-            drawROIs(frame, out);
+            drawROIs(frame, boats);
 
         //show on a window the video frame by frame
         imshow("Camera", frame);
@@ -121,7 +122,7 @@ int main(int argc, char **argv) {
             break;
         }
         
-        oldFrame = grayframe.clone();
+        oldFrame = frame;
     
     }
 
