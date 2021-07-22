@@ -60,8 +60,9 @@ void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages
         if(displayImages){
             imageInfo.showLabeledKps();
         }
-        imageInfo.performSegmentation(displayImages);
-        auto ious = imageInfo.computeIOU(displayImages);
+        imageInfo.performSegmentation(displayImages, true, 45, 0.01);
+		uint fp, fn;
+        auto ious = imageInfo.computeIOU(displayImages, 0.02, 1.15, fp, fn);
         if(detailed){
             std::cout<<imageInfo.getName()<<std::endl;
             for(const auto& iou: ious)

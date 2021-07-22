@@ -17,6 +17,7 @@ class KMeansClassifier {
         void clusterbgKps(std::vector<std::vector<double>>& bgKps, int k, bool printComp);
 
         int predictLabel(std::vector<double>& descriptor);
+        std::vector<int> predictBoatsBatch(cv::Mat& descriptors, float threshold);
 
         void save(cv::String& inputDirectory);
         void load(cv::String& inputDirectory, bool bg = true);

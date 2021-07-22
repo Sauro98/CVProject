@@ -153,6 +153,25 @@ int KMeansClassifier::predictLabel(std::vector<double>& descriptor){
         return 0;
 }
 
+std::vector<int> KMeansClassifier::predictBoatsBatch(cv::Mat& descriptors, float threshold){
+    cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
+    std::vector< std::vector<cv::DMatch> > knn_matches;
+    matcher->knnMatch( descriptors, boatsCMat, knn_matches, 2 );
+    const float ratio_thresh = decisionRatio;
+    std::vector<int> labels;
+    for (size_t i = 0; i < knn_matches.size(); i++)
+    {
+        if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+            if(knn_matches[i][0].distance < threshold)
+                labels.push_back(BOAT_TARGET);
+            else
+                labels.push_back(SEA_TARGET);
+        else
+            labels.push_back(SEA_TARGET);
+    }
+    return labels;
+}
+
 void KMeansClassifier::save(cv::String& inputDirectory){
     std::vector<std::vector<double>> seaCentroids, boatsCentroids, bgCentroids;
     fillDoubleVectorWithMat(seaCMat, seaCentroids);
