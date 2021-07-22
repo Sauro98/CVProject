@@ -64,7 +64,7 @@ class video_track {
         for (int i = 0; i < mov_contours.size(); i++) {
 
             //if the area of the motion is below a constant then do nothing
-            if (contourArea(mov_contours[i]) < 5000) {
+            if (contourArea(mov_contours[i]) < 3000) {
                 continue;
             }
 
@@ -82,10 +82,10 @@ class video_track {
     {
 
 
-        vector<Point2f> allkeyBBpoints;
+        vector<Point2f> keyBBpoints;
         vector<KeyPoint> keypframe;
         vector<vector<double>> descVect;
-        bool label;
+        int label;
         Mat descrframe;
         vector<Rect> singleROI;
         SiftMasked featImg = SiftMasked();
@@ -94,16 +94,18 @@ class video_track {
         singleROI.push_back(ROI);
         Mat colframe = featImg.findBinMask(currentFrame, singleROI);
         keypframe = featImg.findFeatures(currentFrame, colframe, descrframe);
-        KeyPoint::convert(keypframe,allkeyBBpoints);
-        appendDescriptors(descVect, descrframe, 0, false);
-        descSize = descVect.size();
+        KeyPoint::convert(keypframe, keyBBpoints);
+        //appendDescriptors(descVect, descrframe, 0, false);
+        
+        vector<int> labels = classifier.predictBoatsBatch(descrframe,250);
+        descSize = labels.size();
 
         for (int i = 0; i < descVect.size(); i++) {
-            label = classifier.predictLabel(descVect[i]);
+            label = labels[i];
 
             if (label == BOAT_LABEL) {
                 num_boats++;
-                keyboatsBBpoints.push_back(allkeyBBpoints[i]);
+                keyboatsBBpoints.push_back(keyBBpoints[i]);
 
             }
 
@@ -115,24 +117,29 @@ class video_track {
 
 
 
-    vector<Point2f> track(Mat& prevFrame, Mat& currentFrame, vector<Point2f> keypBB)
+    vector<Point2f> track(Mat& prevFrame, Mat& currentFrame, vector<Point2f> keypBB, , Point2f& delta)
     {
 
         vector<Point2f> newKp;
         vector<unsigned char> status;
         vector<float> err;
-        TermCriteria criteria = TermCriteria((TermCriteria::COUNT) + (TermCriteria::EPS), 10, 0.03);
+       // TermCriteria criteria = TermCriteria((TermCriteria::COUNT) + (TermCriteria::EPS), 10, 0.03);
 
-        calcOpticalFlowPyrLK(prevFrame,currentFrame, keypBB,newKp,status,err, cv::Size(21, 21),0,criteria);
+        calcOpticalFlowPyrLK(prevFrame,currentFrame, keypBB,newKp,status,err, cv::Size(21, 21),0);
 
         vector<Point2f> good_new;
         for(uint k = 0; k < keypBB.size(); k++)
         {
             // Select good points
-            if(status[k] == 1) {
+            if(status[k] == 1 && err[k] < 20 && norm(newKp[k] - keypBB[k]) < 100000) {
+                delta += newKp[k] - keypBB[k];
                 good_new.push_back(newKp[k]);
             }
         }
+        
+        if(good_new.size())
+            {delta /= (float)good_new.size();}
+        
         return good_new;
 
     }
