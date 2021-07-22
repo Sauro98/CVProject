@@ -1,10 +1,10 @@
-#include <opencv2/opencv.hpp>
-#include <opencv2/tracking.hpp>
-#include <opencv2/core/ocl.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/core.hpp>
 #include <unistd.h>
 
 #include "Utils.hpp"
-//#include "Utils.cpp"
+#include "DatasetHelper.hpp"
+#include "video_track.h"
 
 
 using namespace cv;
@@ -12,71 +12,116 @@ using namespace std;
  
 int main(int argc, char **argv) {
 
-    Mat frame, gray, frameDelta, thresh, firstFrame;
-    vector<vector<Point>> contours;
+    Mat frame, gray, oldFrame, grayframe, firstFrame;
+    vector<vector<Point2f>> oldkp;
 
-    if (argc != 2 )
+    if (argc != 3 )
     {
-        printf("usage: ./filename <Video>\n");
+        printf("usage: ./filename <Video> <path_directory_classifier>\n");
         return -1;
     }
 
-    VideoCapture video(argv[1]); //open video given by command line
+    String filename = argv[1];
+ 
+    video_track trck_vd = video_track();
+    VideoCapture video(filename); //open video given by command line
 
     if (!video.isOpened()) {
         cout << "Couldn't find or open the video!\n" << endl;
         return -1;
     }
+ 
+    String input_directoryKM = argv[2];
+
+    //classifier for boat detection
+    KMeansClassifier classifier(0.9);
+    classifier.load(input_directoryKM,true);
 
     sleep(3);
     video.read(frame);
 
     //convert to grayscale and set the first frame
-    cvtColor(frame, firstFrame, COLOR_BGR2GRAY);
-    GaussianBlur(firstFrame, firstFrame, Size(21, 21), 0);
+    firstFrame = trck_vd.preproc(frame);
+
+    //preparing output video
+    VideoWriter outvideo = trck_vd.prep_video(video,filename);
+
+    oldFrame = firstFrame;
 
 
     while(video.read(frame)) {
 
-        vector<Rect> out;
+        vector<Rect> outBB, boats, oldoutBB;
+        vector<Point2f> kp;
+        vector<vector<Point2f>> tempKeyp;
 
         //some preprocessing for every frame
-        //convert to grayscale
-        cvtColor(frame, gray, COLOR_BGR2GRAY);
-        GaussianBlur(gray, gray, Size(21, 21), 0);
+        gray = trck_vd.preproc(frame);
 
-        //compute difference between first frame and current frame, considering first frame is the static one
-        absdiff(firstFrame, gray, frameDelta);
-        threshold(frameDelta, thresh, 25, 255, THRESH_BINARY);
-        
-        dilate(thresh, thresh, Mat(), Point(-1,-1), 2);
-        findContours(thresh, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+        outBB = trck_vd.findBBMovement(firstFrame,gray);
 
        
 
-            for (int i = 0; i < contours.size(); i++) {
+            for (int i = 0; i < outBB.size(); i++) {
+            int sizeROI;
+            int num_keyponBB = 0;
+            
+            //cout<<oldkp.size()<<endl;
 
-                //if the area of the motion is below a constant then do nothing
-                if (contourArea(contours[i]) < 5000) {
-                    continue;
+            if(!oldkp.empty()){
+
+                cvtColor(frame, grayframe, COLOR_BGR2GRAY);
+
+
+                for(int k = 0; k < oldkp.size(); k++) {
+                    kp = trck_vd.track(oldFrame, grayframe, oldkp[k]);
+                    cout << "num_keyponBB " << num_keyponBB << endl;
+                    for (int j = 0; j < kp.size(); j++) {
+                        if (outBB[i].contains(kp[j])) {
+                            num_keyponBB++;
+
+                        }
+                    }
                 }
+            }
+             
+            if(num_keyponBB < 200) {
+                num_boats = trck_vd.checkBoats(outBB[i], frame, classifier, sizeROI,kp);
 
-                //else create a rect where there is motion
-                out.push_back(boundingRect(contours[i]));
+                if (num_boats > (sizeROI / 6)) {
+                    boats.push_back(outBB[i]);
+                    tempKeyp.push_back(kp);
+                }
+                else
+                    {
+                    kp.clear();
+                }
+                //cout << "sizeROI " << i << " " << sizeROI << endl;
+                //cout << "num_boats " << i << " " << num_boats << endl;
 
             }
+            else
+            {
+                boats.push_back(outBB[i]);
+            }
+             
+         }
+        oldkp = tempKeyp;
 
             //finally draw the rects found
             drawROIs(frame, out);
 
         //show on a window the video frame by frame
         imshow("Camera", frame);
+        outvideo.write(frame);
 
         
         if(waitKey(1) == 27){
             //exit if ESC is pressed
             break;
         }
+        
+        oldFrame = grayframe.clone();
     
     }
 
