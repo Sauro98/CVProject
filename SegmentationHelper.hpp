@@ -6,6 +6,7 @@
 #define BOAT_MASK_EXT "*_maskb.png"
 #define MASK_TOKEN "_mask"
 #define DATASET_TOKEN "kp_dataset"
+#define PARAMETERS_TOKEN "parameters"
 
 // target values defined in DatasetHelper.hpp
 #define BOAT_LABEL BOAT_TARGET
@@ -16,16 +17,22 @@
 #define BOATS_CH_INDEX 1 // green channel
 #define SEA_CH_INDEX 2 // red channel
 
+#define BOAT_GRID_INDEX 0
+#define SEA_GRID_INDEX 1
+#define BG_GRID_INDEX 2
+
 #include <iostream>
 #include <fstream>
 #include <random>
 #include <iterator>
+#include <math.h>
 
 #include "SiftMasked.h"
 #include "BlackWhite_He.h"
 #include "Utils.hpp"
 #include "DatasetHelper.hpp"
 #include <opencv2/core/utils/filesystem.hpp>
+#include <opencv2/objdetect.hpp>
 
 typedef unsigned int (*classFunc)(std::vector<double>&, void*);
 
@@ -38,15 +45,16 @@ class SegmentationInfo {
         SegmentationInfo(cv::Mat image, cv::Mat seaMask, cv::Mat boatsMask, cv::Mat bgMask, std::vector<cv::Rect> bboxes, cv::String imageName): image(image), seaMask(seaMask), boatsMask(boatsMask), bgMask(bgMask), trueBboxes(bboxes), imageName(imageName) {
             estBboxes = std::vector<cv::Rect>();
         };
-        void computeKeypoints(bool sharpen, classFunc classify = nullptr, void* usrData = nullptr);
+        void computeKeypoints(bool sharpen, classFunc classify = nullptr, void* usrData = nullptr, unsigned int numThread = 1);
         void showLabeledKps();
-        void performSegmentation(bool showResults);
-        std::vector<double> computeIOU(bool showBoxes);
+        void performSegmentation(bool showResults, bool addBg, uint maxDim, double minNormVariance);
+        void findBBoxes(bool showBoxes, double minPercArea, double maxOverlapMetric);
+        std::vector<double> computeIOU(bool showBoxes, double minPercArea, double maxOverlapMetric, uint& falsePos, uint& falseNeg);
         double computePixelAccuracy();
         cv::String& getName();
-        void appendBoatsDescriptors(std::vector<std::vector<double>>& vect) const;
-        void appendSeaDescriptors(std::vector<std::vector<double>>& vect) const;
-        void appendBgDescriptors(std::vector<std::vector<double>>& vect) const;
+        void appendBoatsDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
+        void appendSeaDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
+        void appendBgDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
 
     private: 
         cv::String imageName;

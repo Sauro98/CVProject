@@ -35,7 +35,9 @@ void loadDataset(
 					
 					unsigned int inSize,
 					unsigned int vSize,
-					unsigned int tSize
+					unsigned int tSize,
+					 
+					bool includeTargets = true
 				);
 
 #endif
