@@ -34,8 +34,7 @@ double cluster(std::vector<std::vector<double>>& input, int k,cv::Mat& output){
 
 double l2Dist(std::vector<double>& a, std::vector<double>& b){
     std::vector<double> auxiliary;
-    std::transform (a.begin(), a.end(), b.begin(), std::back_inserter(auxiliary),//
-                    [](double element1, double element2) {return pow((element1-element2),2);});
+    std::transform (a.begin(), a.end(), b.begin(), std::back_inserter(auxiliary),
     return std::sqrt(std::accumulate(auxiliary.begin(), auxiliary.end(), 0.0));
 }
 
@@ -70,7 +69,6 @@ double closerInVector(std::vector<std::vector<double>>& vector, std::vector<doub
             minDist = dist;
         }
     }
-
     return minDist;
 }
 
