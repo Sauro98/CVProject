@@ -1,6 +1,4 @@
-//
-// Created by Anna Zuccante on 21/07/2021.
-//
+
 
 #ifndef VIDEO_TRACK_H
 #define VIDEO_TRACK_H
@@ -78,30 +76,7 @@ class video_track {
         return bboxes;
     }
 
-    vector<int> checkNewRects(vector<Rect> oldFrameRects, Rect newFrameRect)
-    {
-        vector<int> vectRects;
-        for(int i=0; i<oldFrameRects.size();i++)
-        {
-             int newRect;
-             long deltax = oldFrameRects[i].x - newFrameRect.x;
-             long deltay = oldFrameRects[i].y - newFrameRect.y;
-
-             if(deltay<1000)
-             {
-                 newRect = 1;
-             }
-             else
-             {
-                 newRect = 0;
-             }
-
-             vectRects.push_back(newRect);
-
-        }
-
-        return vectRects;
-    }
+  
 
     int checkBoats(const Rect& ROI, const Mat& currentFrame, KMeansClassifier classifier, int &descSize, vector<Point2f> &keyBBpoints)
     {
@@ -159,26 +134,6 @@ class video_track {
         return good_new;
 
     }
-
-    /*
-    void draw(cv::Mat& currentFrame,const vector<Point2f>& kp )
-    {
-        for (int i = 0; i < kp.size(); i++)
-        {
-            cv::circle(currentFrame, kp[i], 3, (0,0,255), -1);
-        }
-
-        cv::line( currentFrame, pcp[0],
-                  pcp[1], (0,0,255), 4 );
-        cv::line( currentFrame, pcp[1],
-                  pcp[2], (0,0,255), 4 );
-        cv::line( currentFrame, pcp[2],
-                  pcp[3], (0,0,255), 4 );
-        cv::line( currentFrame, pcp[3],
-                  pcp[0], (0,0,255), 4 );
-    }
-
-     */
 
 
 
