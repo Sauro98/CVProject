@@ -28,7 +28,7 @@ private:
     //std::vector<std::vector<double>> boatsCentroids;
     //std::vector<std::vector<double>> bgCentroids;
 
-    cv::Mat seaCMat, boatsCMat,  bgCMat;
+    cv::Mat seaCMat, boatsCMat, boatsCMat32,  bgCMat;
 };
 
 double cluster(std::vector<std::vector<double>>& input, int k,cv::Mat& output);

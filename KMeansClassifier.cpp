@@ -1,7 +1,7 @@
 #include "kMeansClassifier.hpp"
 
 template <class T>
-cv::Mat matFromVecOfVec(std::vector<std::vector<double>>& input, int matType){
+cv::Mat matFromVecOfVec(const std::vector<std::vector<double>>& input, int matType){
     if(input.size() == 0)
         return cv::Mat(cv::Size(0,0), matType);
     cv::Mat matVec = cv::Mat(input.size(), input.at(0).size(), matType);
@@ -34,7 +34,8 @@ double cluster(std::vector<std::vector<double>>& input, int k,cv::Mat& output){
 
 double l2Dist(std::vector<double>& a, std::vector<double>& b){
     std::vector<double> auxiliary;
-    std::transform (a.begin(), a.end(), b.begin(), std::back_inserter(auxiliary),
+    std::transform (a.begin(), a.end(), b.begin(), std::back_inserter(auxiliary),//
+        [](double element1, double element2) {return pow((element1-element2),2);});
     return std::sqrt(std::accumulate(auxiliary.begin(), auxiliary.end(), 0.0));
 }
 
@@ -154,7 +155,7 @@ int KMeansClassifier::predictLabel(std::vector<double>& descriptor){
 std::vector<int> KMeansClassifier::predictBoatsBatch(cv::Mat& descriptors, float threshold){
     cv::Ptr<cv::DescriptorMatcher> matcher = cv::DescriptorMatcher::create(cv::DescriptorMatcher::FLANNBASED);
     std::vector< std::vector<cv::DMatch> > knn_matches;
-    matcher->knnMatch( descriptors, boatsCMat, knn_matches, 2 );
+    matcher->knnMatch( descriptors, boatsCMat32, knn_matches, 2 );
     const float ratio_thresh = decisionRatio;
     std::vector<int> labels;
     for (size_t i = 0; i < knn_matches.size(); i++)
@@ -194,6 +195,8 @@ void KMeansClassifier::load(cv::String& inputDirectory, bool bg){
     std::cout<<"Start mat creation"<<std::endl;
     bgCMat = matFromVecOfVec<double>(bgCentroids, CV_64F);
     seaCMat = matFromVecOfVec<double>(seaCentroids, CV_64F);
-    boatsCMat = matFromVecOfVec<float>(boatsCentroids, CV_32F);
+    boatsCMat = matFromVecOfVec<double>(boatsCentroids, CV_64F);
+    boatsCMat32 = matFromVecOfVec<float>(boatsCentroids, CV_32F);
+
     std::cout<<"End mat creation"<<std::endl;
 }

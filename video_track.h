@@ -4,16 +4,17 @@
 #define VIDEO_TRACK_H
 
 #include <opencv2/opencv.hpp>
-#include <opencv2/tracking.hpp>
+#include<opencv2/video/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
-#include <unistd.h>
 #include "Utils.hpp"
 #include "SiftMasked.h"
 #include "kMeansClassifier.hpp"
 #include "SegmentationHelper.hpp"
+#include "DatasetHelper.hpp"
+#include <chrono>
 
 
 using namespace cv;
@@ -100,7 +101,7 @@ class video_track {
         vector<int> labels = classifier.predictBoatsBatch(descrframe,250);
         descSize = labels.size();
 
-        for (int i = 0; i < descVect.size(); i++) {
+        for (int i = 0; i < labels.size(); i++) {
             label = labels[i];
 
             if (label == BOAT_LABEL) {
@@ -117,7 +118,7 @@ class video_track {
 
 
 
-    vector<Point2f> track(Mat& prevFrame, Mat& currentFrame, vector<Point2f> keypBB, , Point2f& delta)
+    vector<Point2f> track(Mat& prevFrame, Mat& currentFrame, vector<Point2f> keypBB, Point2f& delta)
     {
 
         vector<Point2f> newKp;

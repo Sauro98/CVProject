@@ -1,16 +1,9 @@
-#include <opencv2/highgui.hpp>
-#include <opencv2/core.hpp>
-#include <unistd.h>
-
-#include "Utils.hpp"
-#include "DatasetHelper.hpp"
 #include "video_track.h"
-
-
 
 using namespace cv;
 using namespace std;
 
+#define getMillis() std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count()
 
 struct traceble
         {vector<Point2f> tracKeyp;
@@ -23,7 +16,7 @@ struct traceble
 int main(int argc, char **argv) {
 
     Mat frame, gray, oldFrame, grayframe(Size(0,0),CV_8UC1), grayoldFrame(Size(0,0),CV_8UC1), grayold;
-
+    unsigned long ms;
 
 
 
@@ -49,8 +42,6 @@ int main(int argc, char **argv) {
     KMeansClassifier classifier(0.9);
     classifier.load(input_directoryKM,true);
 
-
-    sleep(3);
     video.read(frame);
 
 
@@ -66,6 +57,7 @@ int main(int argc, char **argv) {
 
 
     while(video.read(frame)) {
+        ms = getMillis();
 
         vector<Rect> outBB;
 
@@ -134,7 +126,7 @@ int main(int argc, char **argv) {
 
             }
 
-            cout << "maxIoU" << maxIoU << endl;
+            //cout << "maxIoU" << maxIoU << endl;
 
 
             if(maxIoU < 0.5) {
@@ -182,8 +174,11 @@ int main(int argc, char **argv) {
         outvideo.write(frame);
 
 
+         unsigned long delta = getMillis()-ms;
+            delta = (delta>=100)? 1 : (100-delta);
+        char c = (char) cv::waitKey(delta);
 
-        if(waitKey(1) == 27){
+        if(c == 27){
             //exit if ESC is pressed
             break;
         }
