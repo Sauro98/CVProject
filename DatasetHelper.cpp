@@ -108,7 +108,7 @@ void loadDataset(
 		}
 	}
 
-	std::cout<<"sz "<<inputs.size()<<std::endl;
+	//std::cout<<"sz "<<inputs.size()<<std::endl;
 
 	if (vInputs.size() < vSize || tInputs.size() < tSize)
 		std::cout<<"Warning: not enough samples in the data file"<<std::endl;

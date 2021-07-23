@@ -166,6 +166,7 @@ void SegmentationInfo::showLabeledKps(){
     cv::drawKeypoints(kpImg, seaKps, kpImg, cv::Scalar(0,0,255));
     cv::drawKeypoints(kpImg, bgKps, kpImg, cv::Scalar(255,0,0));
     cv::imshow("kps", kpImg);
+    //cv::imwrite(imageName.substr(0,imageName.size()-4) + "_labeled_kps.png", kpImg);
 }
 
 
@@ -177,29 +178,40 @@ bool inHollowMat(int r, int c, const cv::Size& size){
     return r > 0 && c>0 && r < size.height && c < size.width && (r!=0 || c!=0);
 }
 
-void drawMarkersFromGrid(cv::Mat& img, cv::Mat& grid, cv::Mat& coms, double deltaX, double deltaY, cv::Scalar color){
+void drawSingleMarker(cv::Mat& img, cv::Mat& grid, cv::Vec2f& com, int r, int c, int layer,  double deltaX, double deltaY, double x0, double y0, cv::Scalar color){
+    
+    if(com[0] > 0. && com[1] > 0.){
+        cv::circle(img, cv::Point2f(com[0], com[1]),1, color, -1, 8, 0 );
+    }else{
+        for(int nr = -1; nr <=1; nr++){
+            for(int nc = -1; nc <=1; nc++){
+                if(inHollowMat(r+nr, c+nc, img.size())){
+                    if(grid.at<Vec3b>(r+nr,c+nc)(layer) > 0){
+                        double x01 = x0 + nc*(deltaX/2);
+                        double y01 = y0 + nr*(deltaY/2);
+                        cv::circle(img, cv::Point2f(x01, y01),1, color, -1, 8, 0 );
+                    }
+                }
+            }
+        }
+        //cv::circle(img, cv::Point2f(x0, y0),1, color, -1, 8, 0 );
+    }
+}
+
+void drawMarkersFromGrid(cv::Mat& img, cv::Mat& grid, cv::Mat& bgComs, cv::Mat& seaComs, cv::Mat& boatsComs, double deltaX, double deltaY){
     for(int r = 0; r < grid.rows; r++){
         const double y0 = deltaY*r + deltaY/2;
         for(int c = 0; c < grid.cols; c++){
             const double x0 = deltaX*c + deltaX/2;
-            if(grid.at<uchar>(r,c) > 0){
-                cv::Vec2f com = coms.at<cv::Vec2f>(r,c);
-                if(com[0] > 0. && com[1] > 0.){
-                    cv::circle(img, cv::Point2f(com[0], com[1]),1, color, -1, 8, 0 );
-                }else{
-                    for(int nr = -1; nr <=1; nr++){
-                        for(int nc = -1; nc <=1; nc++){
-                            if(inHollowMat(r+nr, c+nc, img.size())){
-                                if(grid.at<uchar>(r+nr,c+nc) > 0){
-                                    double x01 = x0 + nc*(deltaX/2);
-                                    double y01 = y0 + nr*(deltaY/2);
-                                    cv::circle(img, cv::Point2f(x01, y01),1, color, -1, 8, 0 );
-                                }
-                            }
-                        }
-                    }
-                    //cv::circle(img, cv::Point2f(x0, y0),1, color, -1, 8, 0 );
-                }
+            if(grid.at<Vec3b>(r,c)(BOAT_GRID_INDEX) > 0){
+                cv::Vec2f com = boatsComs.at<cv::Vec2f>(r,c);
+                drawSingleMarker(img, grid, com, r, c, BOAT_GRID_INDEX, deltaX, deltaY, x0, y0, cv::Scalar::all(BOAT_LABEL)); 
+            } else if (grid.at<Vec3b>(r,c)(SEA_GRID_INDEX) > 0){
+                cv::Vec2f com = seaComs.at<cv::Vec2f>(r,c);
+                drawSingleMarker(img, grid, com, r, c, SEA_GRID_INDEX, deltaX, deltaY, x0, y0, cv::Scalar::all(SEA_LABEL)); 
+            } else if (grid.at<Vec3b>(r,c)(BG_GRID_INDEX) > 0) {
+                cv::Vec2f com = bgComs.at<cv::Vec2f>(r,c);
+                drawSingleMarker(img, grid, com, r, c, BG_GRID_INDEX, deltaX, deltaY, x0, y0, cv::Scalar::all(BG_LABEL));
             }
         }
     }
@@ -358,7 +370,7 @@ bool isNoisySmallBoat(cv::Mat& boatsGrid, double varThreshold){
     float varY = varVec(ys, meanY);
     float varCoeffX = sqrtf(varX) / boatsGrid.cols;
     float varCoeffY = sqrtf(varY) / boatsGrid.rows;
-    std::cout<<"varcoeffX "<<varCoeffX<<" varcoeffY "<<varCoeffY;
+    //std::cout<<"varcoeffX "<<varCoeffX<<" varcoeffY "<<varCoeffY;
     // If the detected boats are small and distributed over 33% of both directions then 
     // it is most likely that the detected boats are noise. It is not possible
     // to distinguish an image with many sparse small boats to an image with just
@@ -376,7 +388,7 @@ bool isNoisySmallBoat(cv::Mat& boatsGrid, double varThreshold){
         } else {
             condNumber = varCoeffY / varCoeffX;
         }
-        std::cout<<" cond num "<<condNumber<<std::endl;
+        //std::cout<<" cond num "<<condNumber<<std::endl;
         // We want the largest variance to be at least 1.5 times the smallest one to have
         // a predominant detection direction
         if(condNumber > 1.5f)
@@ -481,8 +493,12 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
 
     if(image.rows >= image.cols){
         cels_x = (maxDim * image.cols)/(image.rows);
+        if (cels_x == 0)
+            cels_x = 1;
     } else {
         cels_y = (maxDim * image.rows)/(image.cols);
+        if (cels_y == 0)
+            cels_y = 1;
     }
 
     double delta_x = image.cols/cels_x;
@@ -512,12 +528,12 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
 
 
     if(bigBoatFlag){
-        std::cout<<"big boat"<<std::endl;
+        //std::cout<<"big boat"<<std::endl;
         morphMask(chs[BOAT_GRID_INDEX],5);
         cv::morphologyEx(chs[BOAT_GRID_INDEX], chs[BOAT_GRID_INDEX], cv::MORPH_ERODE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3,3)));
 
     } else {
-        std::cout<<"small boat"<<std::endl;
+        //std::cout<<"small boat"<<std::endl;
         bool isNoisy = isNoisySmallBoat(chs[BOAT_GRID_INDEX],0.2);
         if(isNoisy){
             // noise, erase hard
@@ -535,23 +551,24 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
         cv::morphologyEx(chs[SEA_GRID_INDEX], chs[SEA_GRID_INDEX], cv::MORPH_ERODE, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(3,3)));
     }
     
-
-    // BG has lowest priority, drawn first
-    drawMarkersFromGrid(markersMask, chs[BG_GRID_INDEX],bgComs, delta_x, delta_y, cv::Scalar::all(BG_LABEL));
-    // sea drawn next
-    drawMarkersFromGrid(markersMask, chs[SEA_GRID_INDEX], seaComs, delta_x, delta_y, cv::Scalar::all(SEA_LABEL));
-    // boats have highest priority and so gat drawn last
-    drawMarkersFromGrid(markersMask, chs[BOAT_GRID_INDEX],boatsComs,  delta_x, delta_y, cv::Scalar::all(BOAT_LABEL));
-    
-    
     
     drawGridOnMat(denseMarkers, chs[BG_GRID_INDEX],bgComs, delta_x, delta_y, cv::Scalar(255,0,0));
     drawGridOnMat(denseMarkers, chs[SEA_GRID_INDEX],seaComs, delta_x, delta_y, cv::Scalar(0,0,255));
     drawGridOnMat(denseMarkers, chs[BOAT_GRID_INDEX],boatsComs, delta_x, delta_y, cv::Scalar(0,255,0));
 
+    cv::Mat mergedGrid;
+    cv::merge(chs, 3, mergedGrid);
+
+    // BG has lowest priority, drawn first
+    drawMarkersFromGrid(markersMask, mergedGrid,bgComs, seaComs, boatsComs, delta_x, delta_y);
+    /*// sea drawn next
+    drawMarkersFromGrid(markersMask, chs[SEA_GRID_INDEX], seaComs, delta_x, delta_y, cv::Scalar::all(SEA_LABEL));
+    // boats have highest priority and so gat drawn last
+    drawMarkersFromGrid(markersMask, chs[BOAT_GRID_INDEX],boatsComs,  delta_x, delta_y, cv::Scalar::all(BOAT_LABEL));*/
 
     if(showResults){
         cv::imshow("dense markers", denseMarkers);
+        //cv::imwrite(imageName.substr(0,imageName.size()-4) + "_dense_markers.png", denseMarkers);
     }
 
 	
@@ -582,6 +599,7 @@ void SegmentationInfo::performSegmentation(bool showResults, bool addBg, uint ma
     if (showResults) {
         wshed = wshed*0.5 + image*0.5;
         imshow( "watershed transform", wshed );
+        //cv::imwrite(imageName.substr(0,imageName.size()-4) + "_watershed_transform.png", wshed);
         //drawBlobPyramidBoats(image, segmentationResult, 5);
     }
 }
@@ -731,11 +749,11 @@ void SegmentationInfo::findBBoxes(bool showBoxes, double minPercArea, double max
     // compute bounding boxes on the result
     smasked.binaryToBBoxes(boatsSegments, estBboxes, true);
 
-    std::cout<<"Size before "<<estBboxes.size()<<std::endl;
+    //std::cout<<"Size before "<<estBboxes.size()<<std::endl;
 
     mergeOverlappingRectangles(estBboxes, maxOverlapMetric);
     
-    std::cout<<"Size after "<<estBboxes.size()<<std::endl;
+    //std::cout<<"Size after "<<estBboxes.size()<<std::endl;
 
     uint prevSize = estBboxes.size();
     uint newSize = prevSize;
@@ -759,7 +777,8 @@ void SegmentationInfo::findBBoxes(bool showBoxes, double minPercArea, double max
         for(auto& box: estBboxes) {
             cv::rectangle(bboxes_img, box, cv::Scalar(0,255,0),2);
         }
-        cv::imshow("bboxes after", bboxes_img);
+        cv::imshow("bboxes", bboxes_img);
+        //cv::imwrite(imageName.substr(0,imageName.size()-4) + "_bboxes.png", bboxes_img);
     }
 
     

@@ -26,6 +26,7 @@
 #include <random>
 #include <iterator>
 #include <math.h>
+#include <stdlib.h>
 
 #include "SiftMasked.h"
 #include "BlackWhite_He.h"
@@ -55,6 +56,10 @@ class SegmentationInfo {
         void appendBoatsDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
         void appendSeaDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
         void appendBgDescriptors(std::vector<std::vector<double>>& vect, bool addEnc) const;
+
+        std::vector<cv::Rect>& getBBoxes(){ return estBboxes;}
+        cv::Mat& getsegmentationResults(){return segmentationResult;}
+        std::vector<cv::KeyPoint> getboatKps() {return boatKps;}
 
     private: 
         cv::String imageName;

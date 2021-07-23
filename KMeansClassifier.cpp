@@ -192,11 +192,11 @@ void KMeansClassifier::load(cv::String& inputDirectory, bool bg){
     loadDataset(inputDirectory + "_boats_kp_dataset.txt", boatsCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     loadDataset(inputDirectory + "_bg_kp_dataset.txt", bgCentroids, vOutputs, vInputs, vOutputs, tInputs, tOutputs, 1000000,0,0, true);
     */
-    std::cout<<"Start mat creation"<<std::endl;
+    //std::cout<<"Start mat creation"<<std::endl;
     bgCMat = matFromVecOfVec<double>(bgCentroids, CV_64F);
     seaCMat = matFromVecOfVec<double>(seaCentroids, CV_64F);
     boatsCMat = matFromVecOfVec<double>(boatsCentroids, CV_64F);
     boatsCMat32 = matFromVecOfVec<float>(boatsCentroids, CV_32F);
 
-    std::cout<<"End mat creation"<<std::endl;
+    //std::cout<<"End mat creation"<<std::endl;
 }
