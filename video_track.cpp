@@ -1,3 +1,4 @@
+
 #include "video_track.h"
 
 using namespace cv;
@@ -16,9 +17,7 @@ struct traceble
 int main(int argc, char **argv) {
 
     Mat frame, gray, oldFrame, grayframe(Size(0,0),CV_8UC1), grayoldFrame(Size(0,0),CV_8UC1), grayold;
-    unsigned long ms;
-
-
+    
 
     if (argc != 3 )
     {
@@ -42,6 +41,7 @@ int main(int argc, char **argv) {
     KMeansClassifier classifier(0.9);
     classifier.load(input_directoryKM,true);
 
+
     video.read(frame);
 
 
@@ -54,6 +54,9 @@ int main(int argc, char **argv) {
     vector<traceble> tracVect;
     int countFrame = 0;
     int limitFrame = 3;
+
+
+    unsigned long ms;
 
 
     while(video.read(frame)) {
@@ -72,8 +75,7 @@ int main(int argc, char **argv) {
             outBB = trck_vd.findBBMovement(grayold,gray);
 
         if(!tracVect.empty()) {
-
-
+            
             cvtColor(oldFrame, grayoldFrame, COLOR_BGR2GRAY);
             cvtColor(frame, grayframe, COLOR_BGR2GRAY);
 
@@ -93,8 +95,6 @@ int main(int argc, char **argv) {
                   //  tracVect[k].lifeTime = 10;
                 if(norm(delta) < 2)
                     tracVect[k].lifeTime = 10;
-
-
 
             }
 
@@ -126,7 +126,7 @@ int main(int argc, char **argv) {
 
             }
 
-            //cout << "maxIoU" << maxIoU << endl;
+            cout << "maxIoU" << maxIoU << endl;
 
 
             if(maxIoU < 0.5) {
@@ -141,19 +141,15 @@ int main(int argc, char **argv) {
                     tracVect.push_back(temp);
                 }
 
-
             }
 
             else
             {
                 tracVect[maxIndex].tracRect |= outBB[i];
             }
-
-
-
+            
         }
-
-
+        
         //finally draw the rects found
         for(const auto &tr : tracVect)
         {
@@ -165,34 +161,27 @@ int main(int argc, char **argv) {
 
 
         }
-
-
-
-
+        
         //show on a window the video frame by frame
         imshow("Camera", frame);
         outvideo.write(frame);
-
-
-         unsigned long delta = getMillis()-ms;
-            delta = (delta>=100)? 1 : (100-delta);
+        
+        
+        unsigned long delta = getMillis()-ms;
+        delta = (delta>=100)? 1 : (100-delta);
         char c = (char) cv::waitKey(delta);
 
         if(c == 27){
             //exit if ESC is pressed
             break;
         }
-
-
-
+        
         if(countFrame > limitFrame)
         {   oldFrame = frame.clone();
             countFrame = 0;}
 
         countFrame++;
-
-
-
+        
     }
 
     return 0;
