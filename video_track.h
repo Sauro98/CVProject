@@ -1,4 +1,3 @@
-
 #ifndef VIDEO_TRACK_H
 #define VIDEO_TRACK_H
 
@@ -40,8 +39,8 @@ class video_track {
         int frame_width=   input_video.get(CAP_PROP_FRAME_WIDTH);
         int frame_height=  input_video.get(CAP_PROP_FRAME_HEIGHT);
         int codec = VideoWriter::fourcc('h', '2', '6', '4');
-        int len_str = (int)filename.size()-(4+1);
-        String outfile = filename.substr(1,len_str) + "_TrackVid.mp4";
+        int len_str = (int)filename.size()-(3+1);
+        String outfile = filename.substr(0,len_str) + "_TrackVid.mp4";
         VideoWriter outvideo(outfile,codec,10,Size(frame_width,frame_height),true);
 
         return outvideo;
@@ -55,9 +54,8 @@ class video_track {
         Mat frameDelta, thresh;
         vector<vector<Point>> mov_contours;
         vector<Rect> bboxes;
+
         absdiff(firstFrame, currentFrame, frameDelta);
-
-
         threshold(frameDelta, thresh, 25, 255, THRESH_BINARY);
         dilate(thresh, thresh, Mat(), Point(-1,-1), 2);
         findContours(thresh, mov_contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
@@ -88,23 +86,17 @@ class video_track {
 
         vector<Point2f> keyBBpoints;
         vector<KeyPoint> keypframe;
-
         int label;
         Mat descrframe;
 
         SiftMasked featImg = SiftMasked();
         int num_boats = 0;
 
-
         Mat colframe = Mat::ones(ROIMat.size(),CV_8U);
         keypframe = featImg.findFeatures(ROIMat, colframe, descrframe);
         KeyPoint::convert(keypframe,keyBBpoints);
-        //appendDescriptors(descVect, descrframe, 0, false);
-
         vector<int> labels = classifier.predictBoatsBatch(descrframe,250);
         descSize = labels.size();
-
-
 
         for (int i = 0; i < labels.size(); i++) {
             label = labels[i];
@@ -153,10 +145,6 @@ class video_track {
         return good_new;
 
     }
-
-
-
-
 
 };
 

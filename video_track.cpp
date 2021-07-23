@@ -17,7 +17,7 @@ struct traceble
 int main(int argc, char **argv) {
 
     Mat frame, gray, oldFrame, grayframe(Size(0,0),CV_8UC1), grayoldFrame(Size(0,0),CV_8UC1), grayold;
-    
+
 
     if (argc != 3 )
     {
@@ -41,10 +41,7 @@ int main(int argc, char **argv) {
     KMeansClassifier classifier(0.9);
     classifier.load(input_directoryKM,true);
 
-
     video.read(frame);
-
-
 
     //preparing output video
     VideoWriter outvideo = trck_vd.prep_video(video,filename);
@@ -75,7 +72,7 @@ int main(int argc, char **argv) {
             outBB = trck_vd.findBBMovement(grayold,gray);
 
         if(!tracVect.empty()) {
-            
+
             cvtColor(oldFrame, grayoldFrame, COLOR_BGR2GRAY);
             cvtColor(frame, grayframe, COLOR_BGR2GRAY);
 
@@ -85,14 +82,10 @@ int main(int argc, char **argv) {
 
                 tracVect[k].tracKeyp = trck_vd.track(grayoldFrame, grayframe, tracVect[k].tracKeyp, delta);
                 tracVect[k].isTracked = true;
-               // tracVect[k].tracRect = boundingRect(tracVect[k].tracKeyp);
 
                 tracVect[k].tracRect.x = tracVect[k].tracRect.x + delta.x;
                 tracVect[k].tracRect.y = tracVect[k].tracRect.y + delta.y;
 
-                //tracVect[k].lifeTime++;
-                //if(tracVect[k].tracRect.x <= 1 || tracVect[k].tracRect.y <= 1 || tracVect[k].tracRect.x + tracVect[k].tracRect.width >= frame.cols - 1 || tracVect[k].tracRect.y + tracVect[k].tracRect.height >= frame.rows - 1 )
-                  //  tracVect[k].lifeTime = 10;
                 if(norm(delta) < 2)
                     tracVect[k].lifeTime = 10;
 
@@ -105,9 +98,8 @@ int main(int argc, char **argv) {
 
         drawROIs(frame, outBB);
         for (int i = 0; i < outBB.size(); i++) {
+
             int sizeROI;
-
-
             double maxIoU = -1;
             int maxIndex;
             double minArea;
@@ -125,8 +117,6 @@ int main(int argc, char **argv) {
 
 
             }
-
-            cout << "maxIoU" << maxIoU << endl;
 
 
             if(maxIoU < 0.5) {
@@ -147,26 +137,22 @@ int main(int argc, char **argv) {
             {
                 tracVect[maxIndex].tracRect |= outBB[i];
             }
-            
+
         }
-        
+
         //finally draw the rects found
         for(const auto &tr : tracVect)
         {
             if(tr.isTracked)
                 rectangle(frame,tr.tracRect,Scalar(0,255,0),2);
-            //else
-                //rectangle(frame,tr.tracRect,Scalar(255,0,0),2);
-
-
 
         }
-        
+
         //show on a window the video frame by frame
         imshow("Camera", frame);
         outvideo.write(frame);
-        
-        
+
+
         unsigned long delta = getMillis()-ms;
         delta = (delta>=100)? 1 : (100-delta);
         char c = (char) cv::waitKey(delta);
@@ -175,13 +161,13 @@ int main(int argc, char **argv) {
             //exit if ESC is pressed
             break;
         }
-        
+
         if(countFrame > limitFrame)
         {   oldFrame = frame.clone();
             countFrame = 0;}
 
         countFrame++;
-        
+
     }
 
     return 0;
