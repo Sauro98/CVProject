@@ -149,7 +149,7 @@ int main(int argc, char** argv)
 
     SegmentationHelper sHelper = SegmentationHelper(input_directory, images_ext);
     auto segmentationInfos = sHelper.loadInfos(false);
-    computeShowMetrics(segmentationInfos,true, false, &classifier, params.addBg, params.maxDim, params.minNormVariance, params.minPercArea, params.maxOverlapMetric);
+    computeShowMetrics(segmentationInfos,true, true, &classifier, params.addBg, params.maxDim, params.minNormVariance, params.minPercArea, params.maxOverlapMetric);
     //writeParamsToFile(params, input_directory + "parameters.txt");
 }
 
@@ -175,12 +175,18 @@ void computeShowMetrics(std::vector<SegmentationInfo>& infos, bool displayImages
         //std::cout<<"pre segmentation"<<std::endl;
         imageInfo.performSegmentation(displayImages, addBg, maxDim, minNormVariance);
         //std::cout<<"pre IOU"<<std::endl;
-        auto ious = imageInfo.computeIOU(displayImages, minPercArea, maxOverlapMetric, falsePos, falseNeg);
+        uint falsePosCurr= 0;
+        uint falseNegCurr = 0;
+        auto ious = imageInfo.computeIOU(displayImages, minPercArea, maxOverlapMetric, falsePosCurr, falseNegCurr);
+        falsePos += falsePosCurr;
+        falseNeg += falseNegCurr;
         //std::cout<<"post IOU"<<std::endl;
         if(detailed){
             std::cout<<imageInfo.getName()<<std::endl;
             for(const auto& iou: ious)
                 std::cout<<"iou: "<<iou<<std::endl;
+            std::cout<<"False positives: "<<falsePosCurr<<std::endl;
+            std::cout<<"False negatives: "<<falseNegCurr<<std::endl;
         }
         
         allIous.insert(allIous.end(), ious.begin(), ious.end());
