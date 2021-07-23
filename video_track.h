@@ -1,20 +1,19 @@
 
-
 #ifndef VIDEO_TRACK_H
 #define VIDEO_TRACK_H
 
 #include <opencv2/opencv.hpp>
-#include<opencv2/video/tracking.hpp>
+#include <opencv2/video/tracking.hpp>
 #include <opencv2/core/ocl.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
+#include <chrono>
 #include "Utils.hpp"
 #include "SiftMasked.h"
 #include "kMeansClassifier.hpp"
 #include "SegmentationHelper.hpp"
 #include "DatasetHelper.hpp"
-#include <chrono>
 
 
 using namespace cv;
@@ -57,8 +56,9 @@ class video_track {
         vector<vector<Point>> mov_contours;
         vector<Rect> bboxes;
         absdiff(firstFrame, currentFrame, frameDelta);
-        threshold(frameDelta, thresh, 25, 255, THRESH_BINARY);
 
+
+        threshold(frameDelta, thresh, 25, 255, THRESH_BINARY);
         dilate(thresh, thresh, Mat(), Point(-1,-1), 2);
         findContours(thresh, mov_contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
@@ -77,37 +77,42 @@ class video_track {
         return bboxes;
     }
 
-  
 
     int checkBoats(const Rect& ROI, const Mat& currentFrame, KMeansClassifier classifier, int &descSize, vector<Point2f> &keyboatsBBpoints)
     {
 
+        Mat ROIMat = currentFrame(ROI);
+
+        if(ROIMat.empty())
+            return 0;
 
         vector<Point2f> keyBBpoints;
         vector<KeyPoint> keypframe;
-        vector<vector<double>> descVect;
+
         int label;
         Mat descrframe;
-        vector<Rect> singleROI;
+
         SiftMasked featImg = SiftMasked();
         int num_boats = 0;
 
-        singleROI.push_back(ROI);
-        Mat colframe = featImg.findBinMask(currentFrame, singleROI);
-        keypframe = featImg.findFeatures(currentFrame, colframe, descrframe);
-        KeyPoint::convert(keypframe, keyBBpoints);
+
+        Mat colframe = Mat::ones(ROIMat.size(),CV_8U);
+        keypframe = featImg.findFeatures(ROIMat, colframe, descrframe);
+        KeyPoint::convert(keypframe,keyBBpoints);
         //appendDescriptors(descVect, descrframe, 0, false);
-        
+
         vector<int> labels = classifier.predictBoatsBatch(descrframe,250);
         descSize = labels.size();
+
+
 
         for (int i = 0; i < labels.size(); i++) {
             label = labels[i];
 
             if (label == BOAT_LABEL) {
                 num_boats++;
-                keyboatsBBpoints.push_back(keyBBpoints[i]);
 
+                keyboatsBBpoints.push_back(Point2f(keyBBpoints[i].x+ROI.x,keyBBpoints[i].y+ROI.y));
             }
 
         }
@@ -124,26 +129,32 @@ class video_track {
         vector<Point2f> newKp;
         vector<unsigned char> status;
         vector<float> err;
-       // TermCriteria criteria = TermCriteria((TermCriteria::COUNT) + (TermCriteria::EPS), 10, 0.03);
+        //TermCriteria criteria = TermCriteria((TermCriteria::COUNT) + (TermCriteria::EPS), 10, 0.03);
 
         calcOpticalFlowPyrLK(prevFrame,currentFrame, keypBB,newKp,status,err, cv::Size(21, 21),0);
 
+
         vector<Point2f> good_new;
+        delta = Point2f (0,0);
+
         for(uint k = 0; k < keypBB.size(); k++)
         {
             // Select good points
             if(status[k] == 1 && err[k] < 20 && norm(newKp[k] - keypBB[k]) < 100000) {
+
                 delta += newKp[k] - keypBB[k];
                 good_new.push_back(newKp[k]);
             }
         }
-        
+
         if(good_new.size())
             {delta /= (float)good_new.size();}
-        
+
         return good_new;
 
     }
+
+
 
 
 
