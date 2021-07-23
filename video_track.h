@@ -7,7 +7,6 @@
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/core.hpp>
-#include <unistd.h>
 #include <chrono>
 #include "Utils.hpp"
 #include "SiftMasked.h"
