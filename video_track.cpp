@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
             }
 
             tracVect.erase(std::remove_if(tracVect.begin(), tracVect.end(), [](const traceble& f) {
-                return  (f.tracKeyp.size() < 2) || f.lifeTime >= 10;
+                return  (f.tracKeyp.size() < 3) || f.lifeTime >= 10;
             }), tracVect.end());
         }
 
